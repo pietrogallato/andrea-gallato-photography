@@ -1,0 +1,8 @@
+.caption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+}

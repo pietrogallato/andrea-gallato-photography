@@ -1,0 +1,53 @@
+.dialog {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding: 0;
+  border: none;
+  background: var(--bg);
+  color: var(--fg);
+  display: grid;
+  grid-template-rows: 1fr auto;
+  place-items: center;
+}
+
+.dialog::backdrop {
+  background: #000;
+}
+
+.figure {
+  display: grid;
+  place-items: center;
+  gap: var(--space-3);
+  max-width: min(100vw, calc(100dvh * 2));
+  max-height: 100dvh;
+  padding: var(--space-5) var(--space-4);
+  /* pan-y preserva lo scroll verticale, pinch-zoom preserva l ingrandimento,
+     che e il meccanismo con cui un utente ipovedente ingrandisce la foto. */
+  touch-action: pan-y pinch-zoom;
+}
+
+.image {
+  max-height: 80dvh;
+}
+
+.close, .prev, .next {
+  position: absolute;
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  padding: var(--space-2) var(--space-3);
+  color: var(--fg);
+  border-radius: var(--radius);
+}
+
+.close { top: var(--space-3); right: var(--space-3); }
+.prev { left: var(--space-3); top: 50%; translate: 0 -50%; }
+.next { right: var(--space-3); top: 50%; translate: 0 -50%; }
+
+.close:focus-visible, .prev:focus-visible, .next:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.prev:disabled, .next:disabled { opacity: 0.35; cursor: default; }

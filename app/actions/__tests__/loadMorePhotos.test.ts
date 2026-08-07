@@ -37,7 +37,9 @@ describe('loadMorePhotos', () => {
   })
 
   it('dichiara hasMore falso sull ultimo gruppo parziale', async () => {
-    fetchMock.mockResolvedValueOnce(30).mockResolvedValueOnce([photo(0), photo(1)])
+    // Totale 26, offset 24: restano esattamente 2 fotografie. Il mock deve
+    // essere coerente col totale, altrimenti descrive uno stato impossibile.
+    fetchMock.mockResolvedValueOnce(26).mockResolvedValueOnce([photo(0), photo(1)])
 
     const result = await loadMorePhotos(24, 'it')
     expect(result.hasMore).toBe(false)

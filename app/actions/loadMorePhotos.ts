@@ -29,9 +29,10 @@ export async function loadMorePhotos(offset: number, locale: Locale): Promise<Lo
 
   return {
     rows: packRows(photos, K_DESKTOP),
-    // Calcolato dal totale e non dal numero di elementi ricevuti: dedurlo dagli
-    // elementi darebbe il risultato sbagliato quando l ultimo gruppo e esattamente pieno.
-    hasMore: offset + PAGE_SIZE < (total ?? 0),
+    // Confronta col totale quante fotografie il client ha ora in mano. Dedurre
+    // hasMore dal solo numero di elementi ricevuti (photos.length === PAGE_SIZE)
+    // sbaglierebbe quando l ultimo gruppo e esattamente pieno.
+    hasMore: offset + photos.length < (total ?? 0),
     total: total ?? 0,
   }
 }
