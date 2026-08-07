@@ -1,0 +1,22 @@
+.wrapper {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4);
+}
+
+.button {
+  position: relative;
+  padding: var(--space-3) var(--space-5);
+  min-height: var(--target-min);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--fg);
+  transition: border-color var(--duration-fast) var(--ease);
+}
+
+.button:hover { border-color: var(--fg-muted); }
+
+.button[aria-disabled='true'] {
+  color: var(--fg-muted);
+  cursor: default;
+}
