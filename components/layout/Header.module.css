@@ -1,0 +1,33 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  max-width: var(--content-max);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.name {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  text-decoration: none;
+  margin-right: auto;
+}
+
+.nav { display: flex; gap: var(--space-3); }
+
+.link {
+  color: var(--fg-muted);
+  text-decoration: none;
+  font-size: 0.875rem;
+  padding: var(--space-2);
+}
+
+.link:hover { color: var(--fg); }
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
