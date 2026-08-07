@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation'
 import { LOCALES, isLocale } from '@/lib/i18n/locales'
 import { resolveRoute } from '@/lib/i18n/routes'
+import { sanityFetch } from '@/lib/sanity/fetch'
+import { siteSettingsQuery } from '@/lib/sanity/queries'
 import { HomeView } from '@/views/HomeView'
 
 export function generateStaticParams() {
@@ -19,8 +21,10 @@ export default async function Page({
   if (!route) notFound()
 
   switch (route.key) {
-    case 'home':
-      return <HomeView locale={locale} />
+    case 'home': {
+      const settings = await sanityFetch({ query: siteSettingsQuery, tags: ['settings'] })
+      return <HomeView locale={locale} siteName={settings?.photographerName ?? 'Andrea Gallato'} />
+    }
     default:
       // gallery, projects, project e about arrivano nei piani 1B e Fase 2.
       notFound()
