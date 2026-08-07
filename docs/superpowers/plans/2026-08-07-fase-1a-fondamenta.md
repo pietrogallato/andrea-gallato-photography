@@ -1217,8 +1217,28 @@ export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }))
 }
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+  const { locale } = await params
+  const settings = await sanityFetch({ query: siteSettingsQuery, tags: ['settings'] })
+
+  const name = settings?.photographerName ?? 'Andrea Gallato'
+  const active = isLocale(locale) ? locale : DEFAULT_LOCALE
+
+  const title = pickLocalized({ it: settings?.seoTitleIt, en: settings?.seoTitleEn }, active).value
+  const description = pickLocalized(
+    { it: settings?.seoDescriptionIt, en: settings?.seoDescriptionEn },
+    active,
+  ).value
+
+  return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+    title: title || name,
+    description: description || undefined,
+  }
 }
 
 export default async function LocaleLayout({
@@ -1257,6 +1277,8 @@ Tre punti obbligatori del design §8:
 - **`suppressHydrationWarning` su `<html>`.** Lo script modifica il DOM prima che React idrati. Senza questo attributo React tratta la differenza come hydration error e ricostruisce lato client dal boundary più vicino, producendo esattamente il flash che lo script doveva evitare.
 - **`data-theme` è reso in JSX con il default scuro.** Serve perché in Strict Mode React azzera gli attributi di `<html>` non presenti nel JSX a ogni remount.
 - **Questo è il root layout: non esiste `app/layout.tsx`.** Un root layout senza segmento dinamico sopra di sé non riceve `params` e `<html lang>` resterebbe fissa su `it` anche in inglese, violando WCAG 3.1.1 (livello A).
+
+**Correzione del 7 agosto 2026.** La stesura iniziale esportava un `metadata` statico con il solo `metadataBase`, e la §10 rimandava tutti i metadati alla Fase 2. Conseguenza non prevista: il sito non emetteva **alcun `<title>`** — verificato con `curl`, zero occorrenze — che è WCAG 2.4.2 di livello **A** e faceva fallire lo scan axe su tutte e quattro le combinazioni di pagina e tema. Il titolo minimo localizzato appartiene quindi alla Fase 1A, non alla Fase 2, che si limiterà ad aggiungere canonical, `hreflang` e Open Graph. Serve anche importare `DEFAULT_LOCALE` e `pickLocalized`.
 
 - [ ] **Step 3: Verificare che non esista `app/layout.tsx`**
 
@@ -3516,6 +3538,24 @@ for (const path of PAGES) {
 ```
 
 Il design §15.5 richiede che gli scan girino **in entrambi i temi**: un contrasto insufficiente esiste solo in uno dei due, e scansionare il solo tema di default lo nasconderebbe.
+
+**Correzione del 7 agosto 2026.** Prima della chiamata ad axe va disattivato il movimento:
+
+```ts
+await page.addStyleTag({
+  content: '*, *::before, *::after { transition: none !important; animation: none !important; }',
+})
+```
+
+I token dichiarano una transizione di 120ms sul colore. Senza questa riga axe campiona a metà transizione e legge il colore del tema precedente contro lo sfondo di quello nuovo — riproducibile su emulazione iPhone, dove riportava 2.67:1 sul `ThemeToggle`. Diagnosi confermata con una sonda: `--fg-muted` risolveva correttamente a `#5c5c63`, ma la proprietà `color` calcolata era ancora `rgb(154,154,158)`. Non è un allentamento del controllo: axe misura lo stato assestato, che è quello che l'utente vede dopo 120ms e per tutto il resto del tempo.
+
+**Seconda correzione: lo skip link non è verificabile con Tab su WebKit.** Safari per impostazione predefinita evidenzia con Tab solo i controlli di form, quindi salta tutti gli `<a>`. Dimostrato con un esperimento di controllo su una pagina HTML nuda: in WebKit l'ordine di tabulazione di due link e un pulsante è `["button"]`, non `["a","a","button"]`. Il test va quindi ristretto:
+
+```ts
+test.skip(browserName === 'webkit', 'WebKit non tabula sui link per impostazione predefinita')
+```
+
+Verifica la nostra implementazione, non la preferenza di Safari. Lo skip link resta corretto e funzionante per gli utenti Safari che attivano «Premi Tab per evidenziare ogni elemento».
 
 - [ ] **Step 6: Eseguire la suite**
 

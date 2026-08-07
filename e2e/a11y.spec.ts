@@ -14,6 +14,16 @@ for (const path of PAGES) {
         await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
       }
 
+      // I token dichiarano una transizione di 120ms sul colore. Senza questa
+      // riga axe puo campionare a meta transizione e leggere il colore del
+      // tema precedente contro lo sfondo di quello nuovo, riportando un
+      // contrasto che nessun utente vede mai in stato stabile.
+      // Non allenta il controllo: axe misura lo stato assestato, che e quello
+      // che l utente vede dopo 120ms e per tutto il resto del tempo.
+      await page.addStyleTag({
+        content: '*, *::before, *::after { transition: none !important; animation: none !important; }',
+      })
+
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
         .analyze()

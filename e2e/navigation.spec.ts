@@ -47,7 +47,18 @@ test('gli href del selettore lingua sono corretti nell HTML senza JavaScript', a
   await context.close()
 })
 
-test('lo skip link diventa visibile al primo Tab e porta al contenuto', async ({ page }) => {
+test('lo skip link diventa visibile al primo Tab e porta al contenuto', async ({
+  page,
+  browserName,
+}) => {
+  // WebKit salta gli <a> nella tabulazione: e il comportamento predefinito di
+  // Safari, che evidenzia solo i controlli di form finche l utente non attiva
+  // "Premi Tab per evidenziare ogni elemento". Verificato con un esperimento di
+  // controllo su una pagina HTML nuda: in WebKit l ordine di tabulazione di
+  // due link e un pulsante e ["button"], non ["a","a","button"].
+  // Il test verifica la nostra implementazione, non la preferenza di Safari.
+  test.skip(browserName === 'webkit', 'WebKit non tabula sui link per impostazione predefinita')
+
   await page.goto('/it')
   await page.keyboard.press('Tab')
 

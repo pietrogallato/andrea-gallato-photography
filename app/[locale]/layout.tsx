@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { LOCALES, isLocale } from '@/lib/i18n/locales'
+import { LOCALES, DEFAULT_LOCALE, isLocale } from '@/lib/i18n/locales'
 import { getDictionary } from '@/lib/i18n/dictionaries'
+import { pickLocalized } from '@/lib/i18n/localize'
 import { THEME_SCRIPT, DEFAULT_THEME } from '@/lib/theme/script'
 import { SkipLink } from '@/components/layout/SkipLink'
 import { Header } from '@/components/layout/Header'
@@ -17,8 +18,30 @@ export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }))
 }
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}): Promise<Metadata> {
+  const { locale } = await params
+  const settings = await sanityFetch({ query: siteSettingsQuery, tags: ['settings'] })
+
+  const name = settings?.photographerName ?? 'Andrea Gallato'
+  const title = pickLocalized(
+    { it: settings?.seoTitleIt, en: settings?.seoTitleEn },
+    isLocale(locale) ? locale : DEFAULT_LOCALE,
+  ).value
+
+  const description = pickLocalized(
+    { it: settings?.seoDescriptionIt, en: settings?.seoDescriptionEn },
+    isLocale(locale) ? locale : DEFAULT_LOCALE,
+  ).value
+
+  return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+    title: title || name,
+    description: description || undefined,
+  }
 }
 
 export default async function LocaleLayout({
