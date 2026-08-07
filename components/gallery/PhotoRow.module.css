@@ -1,0 +1,24 @@
+.row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+/* L ultima riga non viene giustificata: i tile mantengono l altezza nominale
+   e restano allineati a sinistra, invece di stirarsi a tutta larghezza. */
+.row[data-last] > * {
+  flex-grow: 0 !important;
+  width: calc((100% - var(--space-3) * 2) * var(--ar) / 2.8);
+}
+
+@media (max-width: 767px) {
+  .row {
+    flex-direction: column;
+  }
+
+  .row > *,
+  .row[data-last] > * {
+    width: 100%;
+    flex-grow: 0 !important;
+  }
+}

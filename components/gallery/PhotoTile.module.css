@@ -1,0 +1,13 @@
+.tile {
+  flex-basis: 0;
+  min-width: 0;
+  display: block;
+  padding: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
