@@ -96,10 +96,10 @@ npm install next@^16.3 react@^19.2.3 react-dom@^19.2.3 sanity@^6.9 next-sanity@^
 ```
 
 ```bash
-npm install -D typescript @types/node @types/react @types/react-dom vitest @vitejs/plugin-react jsdom @testing-library/react @testing-library/dom @testing-library/user-event vite-tsconfig-paths @playwright/test @axe-core/playwright vitest-axe sharp tsx
+npm install -D typescript @types/node @types/react @types/react-dom vitest @vitejs/plugin-react jsdom @testing-library/react @testing-library/dom @testing-library/user-event @testing-library/jest-dom @playwright/test @axe-core/playwright vitest-axe sharp tsx dotenv-cli
 ```
 
-`styled-components` è peer obbligatorio di `sanity` per lo Studio embedded: senza, lo Studio non parte. `@testing-library/dom` è peer esplicito di Testing Library dalla v16 e non è più incluso. `vite-tsconfig-paths` serve a risolvere gli alias TypeScript nei test.
+`styled-components` è peer obbligatorio di `sanity` per lo Studio embedded: senza, lo Studio non parte. `@testing-library/dom` è peer esplicito di Testing Library dalla v16 e non è più incluso. Gli alias TypeScript nei test sono risolti nativamente da Vite (`resolve.tsconfigPaths` nel Task 2), non da un plugin.
 
 - [ ] **Step 4: Verificare che l'installazione sia pulita**
 
@@ -208,10 +208,14 @@ git commit -m "chore: inizializza toolchain Next 16 su Node 24"
 ```ts
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
-import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
-  plugins: [tsconfigPaths(), react()],
+  plugins: [react()],
+  resolve: {
+    // Vite risolve nativamente i paths di tsconfig; il plugin
+    // vite-tsconfig-paths e deprecato da Vitest 4.
+    tsconfigPaths: true,
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
@@ -220,6 +224,8 @@ export default defineConfig({
   },
 })
 ```
+
+**Correzione del 7 agosto 2026.** La stesura iniziale usava il plugin `vite-tsconfig-paths`, che Vitest 4 segnala come superato a ogni esecuzione: Vite risolve i path di `tsconfig` nativamente con `resolve.tsconfigPaths`. La sostituzione è stata verificata con una sonda che importa via alias `@/`, prima e dopo il cambio, e la dipendenza è stata disinstallata. Rimuoverla anche dall'elenco delle devDependency del Task 1.
 
 - [ ] **Step 2: Creare `vitest.setup.ts`**
 
