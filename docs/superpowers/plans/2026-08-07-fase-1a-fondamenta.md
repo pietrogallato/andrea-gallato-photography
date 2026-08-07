@@ -1150,6 +1150,8 @@ git commit -m "feat: script anti-flash del tema, resiliente a localStorage non a
 
 ## Task 10: Root layout con lingua e tema
 
+> **Ordine di esecuzione corretto:** questo task va eseguito **dopo** i Task 11, 12 e 13. Il root layout importa `Header` e `Footer`, che nascono al Task 13, il quale a sua volta importa `ThemeToggle` (Task 11) e `LocaleSwitcher` (Task 12). Eseguito nella posizione in cui è scritto, il typecheck fallirebbe su import irrisolti. La numerazione è lasciata invariata per non invalidare i riferimenti incrociati del documento.
+
 **Files:**
 - Create: `app/[locale]/layout.tsx`, `components/layout/SkipLink.tsx`, `components/layout/SkipLink.module.css`
 
