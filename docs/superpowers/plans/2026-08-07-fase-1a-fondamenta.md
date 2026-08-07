@@ -149,6 +149,7 @@ Atteso: nessun `UNMET PEER DEPENDENCY`, nessun `invalid`. Se compare un errore `
 node_modules/
 .next/
 out/
+*.tsbuildinfo
 .env.local
 .env*.local
 schema.json
@@ -159,6 +160,10 @@ test-results/
 scripts/seed/generated/
 .DS_Store
 ```
+
+`*.tsbuildinfo` è necessario perché `incremental: true` in `tsconfig.json` fa scrivere a `tsc --noEmit` una cache di ~117 KB alla radice a ogni typecheck: senza la regola, ogni `git add -A` la ricommitterebbe.
+
+`next-env.d.ts` è invece **tracciato** di proposito. Al primo `next dev` o `next build` con un albero di rotte esistente, Next lo riscrive con un contenuto più ampio di quello iniziale: è una modifica attesa una volta sola, non un errore.
 
 - [ ] **Step 7: Creare `next.config.ts`**
 
