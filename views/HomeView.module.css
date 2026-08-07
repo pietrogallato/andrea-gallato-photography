@@ -1,0 +1,9 @@
+.home {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-4);
+}
+
+.title { margin-bottom: var(--space-3); }
+
+.intro { color: var(--fg-muted); font-size: 1.1rem; }
