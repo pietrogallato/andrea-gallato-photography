@@ -5,10 +5,13 @@
 }
 
 /* L ultima riga non viene giustificata: i tile mantengono l altezza nominale
-   e restano allineati a sinistra, invece di stirarsi a tutta larghezza. */
+   e restano allineati a sinistra, invece di stirarsi a tutta larghezza.
+   La dimensione va data con flex-basis e non con width: il tile ha
+   flex-basis: 0, e per un elemento flex flex-basis prevale su width, quindi
+   una regola su width verrebbe ignorata e il tile misurerebbe zero. */
 .row[data-last] > * {
-  flex-grow: 0 !important;
-  width: calc((100% - var(--space-3) * 2) * var(--ar) / 2.8);
+  flex-grow: 0;
+  flex-basis: calc((100% - var(--space-3) * 2) * var(--ar) / var(--k));
 }
 
 @media (max-width: 767px) {
@@ -18,7 +21,7 @@
 
   .row > *,
   .row[data-last] > * {
-    width: 100%;
-    flex-grow: 0 !important;
+    flex-grow: 0;
+    flex-basis: 100%;
   }
 }

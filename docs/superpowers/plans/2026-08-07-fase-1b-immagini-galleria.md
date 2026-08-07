@@ -1343,6 +1343,19 @@ I casi al confine — ultimo gruppo parziale, gruppo che chiude esattamente il t
 
 - [ ] **Step 4: Implementare la Server Action**
 
+**Correzione del 7 agosto 2026, verificata.** `PAGE_SIZE` **non può stare in questo file**. Next vieta qualunque export non-async da un file `'use server'`, e il modo in cui fallisce è insidioso: azzera l'intera superficie di export del modulo, rendendo invisibile anche `loadMorePhotos` stessa. Il difetto resta latente finché nessun componente importa l'azione — i test girano sotto Vitest, non sotto il compilatore di Next — ed esplode al primo uso reale, con `/it`, `/en` e la galleria tutte a 500 e il build che fallisce con:
+
+```
+Error: Only async functions are allowed to be exported in a "use server" file.
+```
+
+La costante vive quindi in `lib/gallery/pageSize.ts`, importata sia dall'azione sia dal suo test.
+
+```ts
+// lib/gallery/pageSize.ts
+export const PAGE_SIZE = 24
+```
+
 ```ts
 // app/actions/loadMorePhotos.ts
 'use server'

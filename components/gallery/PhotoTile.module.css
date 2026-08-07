@@ -1,4 +1,5 @@
 .tile {
+  flex-grow: var(--ar);
   flex-basis: 0;
   min-width: 0;
   display: block;

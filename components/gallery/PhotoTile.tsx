@@ -23,7 +23,10 @@ export function PhotoTile({
     <button
       type="button"
       className={styles.tile}
-      style={{ '--ar': String(photo.ar), flexGrow: photo.ar } as React.CSSProperties}
+      // Solo --ar inline. La crescita la deriva il CSS con flex-grow: var(--ar):
+      // impostarla inline la renderebbe imbattibile da qualunque foglio di
+      // stile, e la regola dell ultima riga non potrebbe piu disattivarla.
+      style={{ '--ar': String(photo.ar) } as React.CSSProperties}
       onClick={() => onOpen(index)}
     >
       <SanityImage

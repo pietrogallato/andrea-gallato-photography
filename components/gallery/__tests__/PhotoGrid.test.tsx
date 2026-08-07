@@ -40,12 +40,21 @@ describe('PhotoGrid', () => {
     expect(onOpen).toHaveBeenCalledWith(0)
   })
 
-  it('imposta il rapporto e il fattore di crescita di ogni tile', () => {
+  it('imposta il rapporto di ogni tile, da cui il CSS deriva la crescita', () => {
     const { container } = render(<PhotoGrid rows={rows} locale="it" onOpen={vi.fn()} />)
     const tile = container.querySelector('button') as HTMLElement
 
     expect(tile.style.getPropertyValue('--ar')).toBe('1.5')
-    expect(tile.style.flexGrow).toBe('1.5')
+  })
+
+  it('non impone la crescita inline, che l ultima riga deve poter disattivare', () => {
+    const { container } = render(<PhotoGrid rows={rows} locale="it" onOpen={vi.fn()} />)
+    const tile = container.querySelector('button') as HTMLElement
+
+    // Uno stile inline batte qualunque foglio di stile: se la crescita fosse
+    // impostata qui, la regola dell ultima riga non potrebbe annullarla e
+    // l ultima riga verrebbe giustificata a tutta larghezza.
+    expect(tile.style.flexGrow).toBe('')
   })
 
   it('marca l ultima riga cosi il CSS non la giustifica', () => {
