@@ -298,35 +298,37 @@ git commit -m "chore: configura Vitest con jsdom e mock delle primitive Next"
 
 Questa task crea una risorsa permanente sull'account Sanity dell'utente. L'utente l'ha approvata esplicitamente con nome `andrea-gallato-photography` e dataset `production`.
 
-- [ ] **Step 1: Verificare l'autenticazione e i flag disponibili della CLI**
+- [ ] **Step 1: Verificare l'autenticazione**
 
 ```bash
-npx sanity@latest debug --secrets
+npx sanity@latest projects list
 ```
 
-Atteso: mostra l'utente autenticato. Se non lo è, l'utente deve eseguire `npx sanity@latest login` di persona — non automatizzare un login.
+Atteso: elenca i progetti dell'utente, il che conferma che la sessione CLI è valida. Se non lo è, l'utente deve eseguire `npx sanity@latest login` di persona — non automatizzare un login.
 
-```bash
-npx sanity@latest init --help
-```
-
-Leggere i flag effettivamente disponibili in questa versione della CLI prima di eseguire il comando dello step successivo, invece di assumerli.
+**Non usare `sanity debug --secrets`**: stampa il token di autenticazione personale in chiaro nell'output del comando, e quindi nella trascrizione della sessione. `projects list` verifica la stessa cosa senza esporre nulla.
 
 - [ ] **Step 2: Creare il progetto**
 
-Con i flag confermati allo step precedente, creare il progetto **senza** scaffolding di uno Studio separato (lo Studio è embedded in questo repository):
+`--bare` crea il progetto stampando solo project id e dataset, **senza** generare alcuno scaffold di Studio da eliminare: lo Studio è embedded in questo repository. In modalità non interattiva serve l'id dell'organizzazione, che si ottiene così:
 
 ```bash
-npx sanity@latest init --create-project "andrea-gallato-photography" --dataset production --output-path /tmp/sanity-bootstrap --template clean --typescript
+npx sanity@latest organizations list
 ```
-
-Annotare il `projectId` restituito, poi eliminare lo scaffold temporaneo:
 
 ```bash
-rm -rf /tmp/sanity-bootstrap
+npx sanity@latest init --bare \
+  --project-name "andrea-gallato-photography" \
+  --dataset production \
+  --organization <ORG_ID> \
+  -y
 ```
 
-**Fallback se i flag differiscono:** creare il progetto da <https://www.sanity.io/manage> nel browser e annotare il `projectId`. Non improvvisare flag non documentati.
+Annotare il `projectId` restituito.
+
+**Esito reale del 7 agosto 2026:** progetto `xpdypayk` nell'organizzazione `oyv0FfNGi`.
+
+**Fallback se i flag differiscono in una versione futura della CLI:** eseguire prima `npx sanity@latest init --help` e leggere i flag effettivi, oppure creare il progetto da <https://www.sanity.io/manage> nel browser. Non improvvisare flag non documentati.
 
 - [ ] **Step 3: Creare `sanity.cli.ts`**
 
@@ -355,15 +357,16 @@ export default defineCliConfig({
 
 I default di TypeGen puntano a `./src/**`, che questo repository non ha: con i default `sanity typegen generate` troverebbe zero query e produrrebbe un file di tipi vuoto, senza errori.
 
-- [ ] **Step 4: Creare i dataset `development` ed `e2e`**
+- [ ] **Step 4: Creare il dataset `development`**
 
 ```bash
 npx sanity@latest dataset create development
-npx sanity@latest dataset create e2e
 npx sanity@latest dataset list
 ```
 
-Atteso: elenca `production`, `development`, `e2e`. Se il piano non consente tre dataset, fermarsi e segnalarlo all'utente: la scelta fra unire `development` ed `e2e` o cambiare piano è sua.
+Atteso: elenca `production` e `development`.
+
+**Esito reale del 7 agosto 2026:** il piano gratuito consente **due** dataset. La creazione di un terzo dataset `e2e`, previsto dalla stesura iniziale del design, è stata rifiutata con «Payment Required — Quota exceeded». Decisione dell'utente: gli end-to-end girano su `development`, e l'isolamento resta affidato al worker singolo e agli `_id` prefissati per esecuzione con teardown (design §15.4). Sul piano gratuito i dataset sono inoltre **pubblici**: in `development` non vanno messi contenuti che non siano placeholder.
 
 - [ ] **Step 5: Creare `.env.example` (versionato)**
 
@@ -3521,13 +3524,13 @@ Nella traccia, controllare gli screenshot dei primi fotogrammi dopo il reload.
 
 - [ ] **Step 4: Verificare la scala dello Studio**
 
-Popolare il dataset `e2e` con 500 documenti e misurare:
+Popolare il dataset `development` con 500 documenti e misurare:
 
 ```bash
-SEED_DATASET=e2e SEED_COUNT=500 npx dotenv -e .env.local -- npm run seed
+SEED_DATASET=development SEED_COUNT=500 npx dotenv -e .env.local -- npm run seed
 ```
 
-Aprire lo Studio puntando al dataset `e2e` e cronometrare il primo render dell'elenco Fotografie. Il design §11.1 fissa la soglia di guardia a 150 fotografie: se a 500 il pannello è inutilizzabile, la soglia è confermata e va registrata nella guida editoriale. Se invece regge, alzarla nel documento.
+Aprire lo Studio e cronometrare il primo render dell'elenco Fotografie. Al termine della misura, ripulire i documenti eccedenti i 30 di sviluppo, perché `development` è anche il dataset degli end-to-end. Il design §11.1 fissa la soglia di guardia a 150 fotografie: se a 500 il pannello è inutilizzabile, la soglia è confermata e va registrata nella guida editoriale. Se invece regge, alzarla nel documento.
 
 Questa misura non blocca la Fase 1A: serve a sostituire una stima con un dato prima che il catalogo cresca.
 

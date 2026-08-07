@@ -21,7 +21,7 @@ Questa revisione incorpora le correzioni emerse da una verifica avversariale con
 
 | Decisione | Scelta | Motivazione |
 |---|---|---|
-| Progetto Sanity | Nuovo: `andrea-gallato-photography`, dataset `production`, `development`, `e2e` | Nessun progetto esistente da riutilizzare |
+| Progetto Sanity | `andrea-gallato-photography` (`xpdypayk`), dataset `production` e `development` | Creato il 7 agosto 2026. Il piano gratuito consente **due** dataset: il terzo dataset `e2e` previsto inizialmente non è creabile, quindi gli e2e girano su `development` |
 | Stack | Next 16 + Sanity 6, versioni correnti | Next 15 + Sanity 4 obbligherebbe a pin EOL (`sanity@4.22.0` senza patch da dicembre 2025, `next-sanity@11.6.13` dietro un dist-tag secondario) |
 | Runtime | Node 24 LTS | Node 25 è EOL da giugno 2026 e Vercel non lo offre |
 | Test | Vitest + Testing Library + Playwright | Integrazione nativa con TS ed ESM |
@@ -488,7 +488,9 @@ Token di anteprima e segreto webhook solo in variabili d'ambiente server-side. N
 
 `.env.example` è versionato; `.env.local` e `storageState.json` no.
 
-**Nota sul piano Sanity**: sul piano Free i dataset sono pubblici, quindi il dataset di sviluppo è leggibile da chiunque conosca il project id. Le restrizioni CORS non lo proteggono: CORS non è un controllo di accesso server-side. Va verificato quale piano copre i tre dataset previsti (`production`, `development`, `e2e`).
+**Nota sul piano Sanity, verificata il 7 agosto 2026**: il piano gratuito consente **due** dataset. La creazione di un terzo (`e2e`) è stata rifiutata con «Quota exceeded», quindi gli end-to-end girano su `development` insieme al lavoro di sviluppo. L'isolamento resta affidato alle due misure di §15.4 — worker singolo e documenti con `_id` prefissato per esecuzione, eliminati in teardown — con il rischio residuo che un test interrotto a metà lasci documenti orfani nel dataset di sviluppo.
+
+Sul piano gratuito i dataset sono inoltre **pubblici**: `development` è leggibile da chiunque conosca il project id. Le restrizioni CORS non lo proteggono, perché CORS non è un controllo di accesso server-side. Non vanno quindi messi in `development` contenuti che non siano placeholder o materiale già destinato alla pubblicazione.
 
 ## 15. Test
 
@@ -514,9 +516,9 @@ I componenti che rendono immagini passano `loader` esplicitamente (§6): il `loa
 
 ### 15.4 End-to-end
 
-Playwright contro il dataset dedicato `e2e`.
+Playwright contro il dataset `development`, condiviso con lo sviluppo perché il piano gratuito non consente un terzo dataset (§14).
 
-**Isolamento.** `workers: 1` e `fullyParallel: false` per la suite che tocca Sanity. Ogni test di scrittura crea documenti con `_id` prefissato univoco (`e2e.<runId>.<n>`) e li elimina in un fixture di teardown, invece di riusare i documenti del seed. Senza questo, i test che pubblicano lasciano stato che altera l'esito degli altri: «blocco della pubblicazione» smetterebbe di fallire dopo la prima esecuzione e il test sui duplicati passerebbe solo dalla seconda.
+**Isolamento.** Poiché il dataset è condiviso, le due misure seguenti non sono un di più ma l'unica cosa che tiene separati i test dal lavoro di sviluppo. `workers: 1` e `fullyParallel: false` per la suite che tocca Sanity. Ogni test di scrittura crea documenti con `_id` prefissato univoco (`e2e.<runId>.<n>`) e li elimina in un fixture di teardown, invece di riusare i documenti del seed. Il prefisso `e2e.` rende inoltre banale ripulire a mano gli orfani lasciati da un'esecuzione interrotta. Senza questo, i test che pubblicano lasciano stato che altera l'esito degli altri: «blocco della pubblicazione» smetterebbe di fallire dopo la prima esecuzione e il test sui duplicati passerebbe solo dalla seconda.
 
 **Autenticazione dello Studio.** Un progetto Playwright `setup` inietta il token di un utente di servizio in `localStorage['__sanity_auth_token_<projectId>']` e salva `storageState`; gli altri progetti lo riusano. Senza questo, tre e2e su dodici non sono implementabili e chi implementa la Fase 3 si trova davanti alla schermata di login SSO.
 
@@ -536,7 +538,7 @@ Nessuna suite automatica sostituisce la prova con screen reader, ma fissa una so
 
 `generatePlaceholders.ts` produce con `sharp` immagini di rapporti misti (16:9, 3:2, 2:3, 4:5, 1:1) in sRGB, lato lungo entro 4000px. `seedDataset.ts` le carica e crea fotografie **con `orderRank` esplicito**, due progetti, homepage, about e impostazioni.
 
-Il dataset di destinazione è un parametro obbligatorio, mai un default: `development` per lo sviluppo quotidiano, `e2e` per la suite Playwright, **mai `production`**. Lo script rifiuta `production` esplicitamente. È idempotente: rieseguirlo non duplica documenti. Esiste una modalità che genera 500 documenti, usata per la verifica di scala dello Studio (§11.1).
+Il dataset di destinazione è un parametro obbligatorio, mai un default: `development` per lo sviluppo quotidiano e per la suite Playwright, **mai `production`**. Lo script rifiuta `production` esplicitamente. È idempotente: rieseguirlo non duplica documenti. Esiste una modalità che genera 500 documenti, usata per la verifica di scala dello Studio (§11.1).
 
 I placeholder servono a sviluppare e testare i layout. **Non sostituiscono la verifica manuale della qualità fotografica** richiesta dalla specifica §16.
 
