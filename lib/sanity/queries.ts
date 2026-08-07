@@ -14,3 +14,30 @@ export const homePageQuery = defineQuery(`
     introIt, introEn
   }
 `)
+
+const PHOTO_FIELDS = `
+  _id,
+  altIt, altEn,
+  titleIt, titleEn,
+  placeIt, placeEn,
+  year,
+  "url": image.asset->url,
+  "aspectRatio": image.asset->metadata.dimensions.aspectRatio,
+  "lqip": image.asset->metadata.lqip
+`
+
+export const galleryPageQuery = defineQuery(`
+  *[_type == "photo" && showInGallery == true && defined(image.asset)]
+    | order(orderRank asc)[$start...$end]{${PHOTO_FIELDS}}
+`)
+
+export const galleryCountQuery = defineQuery(`
+  count(*[_type == "photo" && showInGallery == true && defined(image.asset)])
+`)
+
+export const homeHeroQuery = defineQuery(`
+  *[_type == "homePage"][0]{
+    introIt, introEn,
+    "heroPhoto": heroPhoto->{${PHOTO_FIELDS}}
+  }
+`)
