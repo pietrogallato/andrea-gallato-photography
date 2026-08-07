@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
-const PAGES = ['/it', '/en']
+const PAGES = ['/it', '/en', '/it/fotografie', '/en/photographs']
 const THEMES = ['dark', 'light'] as const
 
 for (const path of PAGES) {
@@ -32,3 +32,19 @@ for (const path of PAGES) {
     })
   }
 }
+
+test('nessuna violazione axe con la lightbox aperta', async ({ page }) => {
+  await page.goto('/it/fotografie')
+  await page.locator('[data-row] button').first().click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+
+  await page.addStyleTag({
+    content: '*, *::before, *::after { transition: none !important; animation: none !important; }',
+  })
+
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze()
+
+  expect(results.violations).toEqual([])
+})
