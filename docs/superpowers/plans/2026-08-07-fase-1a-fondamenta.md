@@ -143,6 +143,10 @@ Atteso: nessun `UNMET PEER DEPENDENCY`, nessun `invalid`. Se compare un errore `
 
 `lib/sanity/types.generated.ts` deve stare in `include`, altrimenti TypeScript non usa i tipi generati da TypeGen e ogni query restituisce `any` senza alcun errore di compilazione.
 
+**Nota verificata il 7 agosto 2026.** Al primo `next dev` Next riscrive questo file di propria iniziativa: cambia `jsx` da `"preserve"` a `"react-jsx"`, aggiunge `.next/dev/types/**/*.ts` a `include` e riformatta il documento espandendo gli array in linea. Riscrive anche `next-env.d.ts` aggiungendovi import da `./.next/types/`, e genera `AGENTS.md` più `CLAUDE.md`. Sono modifiche rigenerate a ogni avvio: vanno committate, non combattute. La suite resta verde con esse in essere (verificato: 50 test, typecheck a zero).
+
+**Conseguenza per CI e per chi clona:** `next-env.d.ts` è tracciato ma referenzia file dentro `.next/`, che è ignorato da git. Su un clone pulito `tsc --noEmit` fallisce finché non è stato eseguito almeno un `next build` o `next dev`. In CI il typecheck va quindi eseguito **dopo** il build, non prima.
+
 - [ ] **Step 6: Creare `.gitignore`**
 
 ```
@@ -2471,20 +2475,43 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
 
 Questo è un **secondo root layout**, necessario perché il root layout del sito vive sotto `app/[locale]/` e non copre `/studio`. La navigazione fra due root layout provoca un full page load, accettabile fra sito e Studio.
 
-- [ ] **Step 5: Montare lo Studio**
+- [ ] **Step 5: Montare lo Studio dietro un confine client**
+
+**Correzione del 7 agosto 2026, verificata.** La stesura iniziale importava `sanity.config` direttamente in `page.tsx`. Non funziona: `page.tsx` è un Server Component, quindi l'import trascina `sanity`, `sanity/structure`, `@sanity/vision` e `@sanity/orderable-document-list` nel layer `app-rsc`, dove Turbopack applica la condizione di export `react-server`. Il `react-server.mjs` di `swr@2.5.0` esporta solo `preload`, `SWRConfig` e `unstable_serialize`, senza default, mentre `sanity@6.9.1` fa `import useSWR from "swr"`. Risultato misurato: `/studio` restituisce **HTTP 500** in sviluppo e `npm run build` fallisce con «Export default doesn't exist in target module». Non è disallineamento di versioni: `sanity@6.9.1` e `next-sanity@13.3.1` sono le ultime stabili pubblicate.
+
+La correzione sposta l'import della config dietro un confine client. `'use client'` non può stare su `page.tsx` stesso, perché né `export const dynamic` né il re-export di `metadata` e `viewport` sono legali in un Client Component.
+
+```tsx
+// app/studio/[[...tool]]/StudioRoot.tsx
+'use client'
+
+import { NextStudio } from 'next-sanity/studio'
+import config from '@/sanity.config'
+
+export default function StudioRoot() {
+  return <NextStudio config={config} />
+}
+```
 
 ```tsx
 // app/studio/[[...tool]]/page.tsx
-import { NextStudio } from 'next-sanity/studio'
-import config from '@/sanity.config'
+import StudioRoot from './StudioRoot'
 
 export const dynamic = 'force-static'
 
 export { metadata, viewport } from 'next-sanity/studio'
 
 export default function StudioPage() {
-  return <NextStudio config={config} />
+  return <StudioRoot />
 }
+```
+
+Alternativa scartata: dichiarare i pacchetti Sanity in `serverExternalPackages` dentro `next.config.ts`. È un cambiamento più ampio e con effetti fuori da `/studio`, mentre il confine client resta contenuto nella cartella dello Studio.
+
+**Correzione correlata in `deskStructure.ts`:** con `SINGLETONS` dichiarato `as const`, `SINGLETON_TYPES` viene inferito come `Set<'homePage'|'aboutPage'|'siteSettings'>` e `.has(schemaType: string)` viene rifiutato con TS2345. Annotare il tipo:
+
+```ts
+export const SINGLETON_TYPES: ReadonlySet<string> = new Set(SINGLETONS.map((s) => s.id))
 ```
 
 - [ ] **Step 6: Verificare che lo Studio si avvii**
