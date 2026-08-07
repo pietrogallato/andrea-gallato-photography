@@ -1,0 +1,26 @@
+export const it = {
+  skipToContent: 'Vai al contenuto',
+  navGallery: 'Fotografie',
+  navProjects: 'Progetti',
+  navAbout: 'About',
+  openMenu: 'Apri il menu',
+  closeMenu: 'Chiudi il menu',
+  themeToggle: 'Tema chiaro',
+  localeGroup: 'Lingua',
+  localeNameIt: 'Italiano',
+  localeNameEn: 'English',
+  loadMore: 'Carica altre',
+  loading: 'Caricamento…',
+  retry: 'Riprova',
+  errorGeneric: 'Qualcosa non ha funzionato.',
+  emptyGallery: 'Nessuna fotografia pubblicata al momento.',
+  notFoundTitle: 'Pagina non trovata',
+  notFoundBody: 'La pagina che cerchi non esiste o è stata spostata.',
+  backHome: 'Torna alla home',
+  lightboxLabel: 'Visualizzatore fotografie',
+  lightboxClose: 'Chiudi',
+  lightboxPrev: 'Fotografia precedente',
+  lightboxNext: 'Fotografia successiva',
+} as const
+
+export type Dictionary = Record<keyof typeof it, string>

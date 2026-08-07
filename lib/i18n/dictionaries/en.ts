@@ -1,0 +1,26 @@
+import type { Dictionary } from './it'
+
+export const en: Dictionary = {
+  skipToContent: 'Skip to content',
+  navGallery: 'Photographs',
+  navProjects: 'Projects',
+  navAbout: 'About',
+  openMenu: 'Open menu',
+  closeMenu: 'Close menu',
+  themeToggle: 'Light theme',
+  localeGroup: 'Language',
+  localeNameIt: 'Italiano',
+  localeNameEn: 'English',
+  loadMore: 'Load more',
+  loading: 'Loading…',
+  retry: 'Try again',
+  errorGeneric: 'Something went wrong.',
+  emptyGallery: 'No photographs published yet.',
+  notFoundTitle: 'Page not found',
+  notFoundBody: 'The page you are looking for does not exist or has moved.',
+  backHome: 'Back to home',
+  lightboxLabel: 'Photograph viewer',
+  lightboxClose: 'Close',
+  lightboxPrev: 'Previous photograph',
+  lightboxNext: 'Next photograph',
+}
