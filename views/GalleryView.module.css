@@ -1,0 +1,9 @@
+.gallery {
+  padding: var(--space-6) 0;
+}
+
+.title {
+  max-width: var(--content-max);
+  margin: 0 auto var(--space-5);
+  padding: 0 var(--space-4);
+}

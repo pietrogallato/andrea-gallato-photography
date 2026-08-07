@@ -1,12 +1,16 @@
 import { notFound } from 'next/navigation'
 import { LOCALES, isLocale } from '@/lib/i18n/locales'
-import { resolveRoute } from '@/lib/i18n/routes'
+import { ROUTES, resolveRoute } from '@/lib/i18n/routes'
 import { sanityFetch } from '@/lib/sanity/fetch'
 import { siteSettingsQuery } from '@/lib/sanity/queries'
 import { HomeView } from '@/views/HomeView'
+import { GalleryView } from '@/views/GalleryView'
 
 export function generateStaticParams() {
-  return LOCALES.map((locale) => ({ locale, segments: [] as string[] }))
+  return LOCALES.flatMap((locale) => [
+    { locale, segments: [] as string[] },
+    { locale, segments: [...ROUTES.gallery[locale]] },
+  ])
 }
 
 export default async function Page({
@@ -25,8 +29,10 @@ export default async function Page({
       const settings = await sanityFetch({ query: siteSettingsQuery, tags: ['settings'] })
       return <HomeView locale={locale} siteName={settings?.photographerName ?? 'Andrea Gallato'} />
     }
+    case 'gallery':
+      return <GalleryView locale={locale} />
     default:
-      // gallery, projects, project e about arrivano nei piani 1B e Fase 2.
+      // projects, project e about arrivano in Fase 2.
       notFound()
   }
 }
