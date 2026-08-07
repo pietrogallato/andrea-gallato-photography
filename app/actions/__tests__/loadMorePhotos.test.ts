@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { PAGE_SIZE } from '@/lib/gallery/pageSize'
 
 const fetchMock = vi.fn()
 vi.mock('@/lib/sanity/fetch', () => ({ sanityFetch: fetchMock }))
 
-const { loadMorePhotos, PAGE_SIZE } = await import('../loadMorePhotos')
+const { loadMorePhotos } = await import('../loadMorePhotos')
 
 function photo(i: number) {
   return {

@@ -7,8 +7,7 @@ import { packRows, K_DESKTOP } from '@/lib/gallery/packRows'
 import type { Row } from '@/lib/gallery/packRows'
 import type { GalleryPhoto } from '@/components/gallery/types'
 import type { Locale } from '@/lib/i18n/locales'
-
-export const PAGE_SIZE = 24
+import { PAGE_SIZE } from '@/lib/gallery/pageSize'
 
 export type LoadMoreResult = {
   rows: Row<GalleryPhoto>[]
