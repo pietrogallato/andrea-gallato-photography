@@ -2858,15 +2858,34 @@ describe('nextOrderRank', () => {
     expect(new Set(ranks).size).toBe(5)
   })
 
-  it('interroga il rank massimo del tipo richiesto', async () => {
+  it('interroga il rank massimo ordinando in modo decrescente', async () => {
     const client = clientReturning(null)
     await nextOrderRank(client, 'photo')
-    const query = (client.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0] as string
-    expect(query).toContain('photo')
-    expect(query).toContain('orderRank')
+
+    const [query] = (client.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [string]
+    expect(query).toContain('orderRank desc')
+    expect(query).toContain('[0]')
+  })
+
+  it('passa il tipo come parametro e non lo interpola nella query', async () => {
+    const client = clientReturning(null)
+    await nextOrderRank(client, 'photo')
+
+    const [query, params] = (client.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      Record<string, unknown>,
+    ]
+
+    // Il tipo viaggia nei parametri, non concatenato nella stringa:
+    // interpolare un valore in una query GROQ e la porta aperta all injection.
+    expect(query).toContain('$type')
+    expect(query).not.toContain('"photo"')
+    expect(params).toEqual({ type: 'photo' })
   })
 })
 ```
+
+**Correzione del 7 agosto 2026.** La stesura iniziale asseriva che la query contenesse la stringa `'photo'`. È sbagliato: l'implementazione parametrizza il tipo come `$type` e lo passa nei parametri, che è la forma idiomatica di GROQ ed evita l'interpolazione di valori in una stringa di query. Il test è stato riscritto per verificare proprio quella proprietà, invece di pretendere il contrario.
 
 Questo è il difetto che la revisione del design ha scoperto e che va prevenuto alla radice: il plugin di ordinamento popola `orderRank` **solo** tramite `initialValue`, che gira unicamente quando il documento nasce dal form dello Studio. Una fotografia creata dal seed o dal tool di upload nascerebbe senza rank, apparirebbe al 20% di opacità nello Studio, non sarebbe trascinabile, e finirebbe in una posizione arbitraria nella galleria pubblica.
 
