@@ -82,7 +82,7 @@ echo "24" > .nvmrc
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "sanity:extract": "sanity schema extract --path=./schema.json",
+    "sanity:extract": "sanity schema extract --path=./schema.json --force",
     "sanity:typegen": "npm run sanity:extract && sanity typegen generate",
     "seed": "tsx scripts/seed/seedDataset.ts"
   }

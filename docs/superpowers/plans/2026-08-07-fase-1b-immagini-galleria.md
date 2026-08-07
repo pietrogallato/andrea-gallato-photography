@@ -194,7 +194,7 @@ export function buildImageUrl(src: string, width: number, options: ImageUrlOptio
 npx vitest run lib/sanity/__tests__/imageUrl.test.ts
 ```
 
-Atteso: PASS, 12 test.
+Atteso: PASS, 13 test.
 
 - [ ] **Step 5: Scrivere il loader**
 
