@@ -17,6 +17,10 @@
 
 .nav { display: flex; gap: var(--space-3); }
 
+@media (max-width: 767px) {
+  .nav { display: none; }
+}
+
 .link {
   color: var(--fg-muted);
   text-decoration: none;

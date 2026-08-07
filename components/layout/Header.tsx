@@ -4,6 +4,7 @@ import { getDictionary } from '@/lib/i18n/dictionaries'
 import { pathFor, alternatePaths } from '@/lib/i18n/routes'
 import { ThemeToggle } from '@/components/controls/ThemeToggle'
 import { LocaleSwitcher } from '@/components/controls/LocaleSwitcher'
+import { MobileMenu } from './MobileMenu'
 import styles from './Header.module.css'
 
 export function Header({ locale, siteName }: { locale: Locale; siteName: string }) {
@@ -20,6 +21,8 @@ export function Header({ locale, siteName }: { locale: Locale; siteName: string 
           {dict.navGallery}
         </Link>
       </nav>
+
+      <MobileMenu locale={locale} dict={dict} />
 
       <div className={styles.controls}>
         <LocaleSwitcher

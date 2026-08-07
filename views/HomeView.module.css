@@ -4,6 +4,13 @@
   padding: var(--space-7) var(--space-4);
 }
 
+.hero {
+  width: 100%;
+  max-height: 88dvh;
+  overflow: hidden;
+  margin-bottom: var(--space-6);
+}
+
 .title { margin-bottom: var(--space-3); }
 
 .intro { color: var(--fg-muted); font-size: 1.1rem; }
