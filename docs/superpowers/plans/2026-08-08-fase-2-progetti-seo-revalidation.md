@@ -1897,7 +1897,21 @@ Atteso: il nuovo titolo compare. **L'invalidazione si materializza alla visita s
 
 - [ ] **Step 6: Registrare l'esito**
 
-Annotare nel piano l'esito reale, compresi eventuali scostamenti. Se il webhook non arriva, il pannello di Sanity permette di rigiocare una consegna: usarlo per diagnosticare invece di ripubblicare a ripetizione.
+**Esito reale dell'8 agosto 2026.**
+
+La prima consegna è fallita con **401**, e la pagina si è aggiornata lo stesso. Le due cose insieme sembravano contraddirsi, e la diagnosi è stata: il ridispiegamento con la variabile d'ambiente era ancora in corso, quindi `SANITY_REVALIDATE_SECRET` non era disponibile al codice, che ha correttamente rifiutato; l'aggiornamento della pagina veniva dal build di quel deploy, non dal webhook. La seconda consegna, a deploy concluso, ha restituito **200**.
+
+Vale la pena notarlo perché è un modo di sbagliarsi facile: una pagina che si aggiorna non prova che la revalidation funzioni. Senza guardare il log della consegna si sarebbe concluso che tutto andava bene.
+
+Verificato poi il ciclo completo:
+
+| Azione | Effetto atteso | Effetto osservato |
+|---|---|---|
+| Pubblicare un progetto | pagina del progetto e indice aggiornati | entrambi aggiornati |
+| Pubblicare una fotografia | pagine che la mostrano aggiornate | pagina di progetto **e homepage** aggiornate, trovate dalla risoluzione delle dipendenze inverse |
+| Pagina non coinvolta | resta in cache | `/it/about` è rimasta `x-vercel-cache: HIT` |
+
+I dati modificati per il test sono stati ripristinati e ripubblicati.
 
 ---
 
