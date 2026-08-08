@@ -11,26 +11,46 @@ export async function HomeView({ locale, siteName }: { locale: Locale; siteName:
   const hero = home?.heroPhoto ? toGalleryPhoto(home.heroPhoto, locale) : null
 
   const intro = pickLocalized({ it: home?.introIt, en: home?.introEn }, locale)
+  const introLang = intro.lang === locale ? undefined : intro.lang
+
+  if (!hero) {
+    return (
+      <div className={styles.fallback}>
+        <h1>{siteName}</h1>
+        {intro.value ? <p lang={introLang}>{intro.value}</p> : null}
+      </div>
+    )
+  }
 
   return (
-    <div className={styles.home}>
-      {hero ? (
-        <div className={styles.hero}>
-          <SanityImage
-            photo={{ url: hero.url, aspectRatio: hero.ar, lqip: hero.lqip, alt: hero.alt, altLang: hero.altLang }}
-            sizes="100vw"
-            locale={locale}
-            priority
-          />
-        </div>
-      ) : null}
+    <section className={`${styles.hero} surface-dark`}>
+      <SanityImage
+        photo={{
+          url: hero.url,
+          aspectRatio: hero.ar,
+          lqip: hero.lqip,
+          alt: hero.alt,
+          altLang: hero.altLang,
+        }}
+        sizes="100vw"
+        locale={locale}
+        priority
+        className={styles.heroImage}
+      />
 
-      <h1 className={styles.title}>{siteName}</h1>
-      {intro.value ? (
-        <p className={styles.intro} lang={intro.lang === locale ? undefined : intro.lang}>
-          {intro.value}
-        </p>
-      ) : null}
-    </div>
+      {/* Velatura fissa e non dipendente dallo scatto: il testo in
+          sovrimpressione deve avere un contrasto garantito qualunque
+          fotografia il fotografo scelga come protagonista. */}
+      <div className={styles.scrim} aria-hidden="true" />
+
+      <div className={styles.content}>
+        <h1 className={styles.title}>{siteName}</h1>
+        {intro.value ? (
+          <p className={styles.intro} lang={introLang}>
+            {intro.value}
+          </p>
+        ) : null}
+      </div>
+    </section>
   )
 }

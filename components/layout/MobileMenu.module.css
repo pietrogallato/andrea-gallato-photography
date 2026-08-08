@@ -1,26 +1,65 @@
-.menu { position: relative; }
+.menu {
+  display: flex;
+  align-items: center;
+}
 
 .trigger {
+  position: relative;
   min-width: var(--target-min);
   min-height: var(--target-min);
   padding: var(--space-2);
   color: var(--fg-muted);
+  transition: color var(--duration-fast) var(--ease);
 }
 
+.trigger:hover,
+.trigger[aria-expanded='true'] {
+  color: var(--fg);
+}
+
+/* Pannello a schermo intero invece che a tendina: su un sito di fotografie il
+   menu e uno dei rari momenti senza immagini, e vale la pena che sia una
+   pagina intera silenziosa invece di un riquadro appiccicato all angolo. */
 .panel {
-  position: absolute;
-  right: 0;
-  top: 100%;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  z-index: 10;
+  justify-content: center;
+  gap: var(--space-6);
+  padding: var(--space-7) var(--space-5);
+  background: var(--bg);
+  animation: fade var(--duration-fast) var(--ease-out) both;
 }
 
-@media (min-width: 768px) {
-  .menu { display: none; }
+.panel[hidden] {
+  display: none;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.navLink {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 1.5rem + 6vw, 3.5rem);
+  letter-spacing: var(--tracking-display);
+  line-height: 1;
+  text-decoration: none;
+  animation: reveal var(--duration-slow) var(--ease-out) both;
+  animation-delay: 60ms;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+  animation: reveal var(--duration-slow) var(--ease-out) both;
+  animation-delay: 140ms;
 }

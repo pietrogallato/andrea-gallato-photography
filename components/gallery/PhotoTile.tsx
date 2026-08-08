@@ -26,7 +26,8 @@ export function PhotoTile({
       // Solo --ar inline. La crescita la deriva il CSS con flex-grow: var(--ar):
       // impostarla inline la renderebbe imbattibile da qualunque foglio di
       // stile, e la regola dell ultima riga non potrebbe piu disattivarla.
-      style={{ '--ar': String(photo.ar) } as React.CSSProperties}
+      // --ar guida la crescita flex e il rapporto; --i scaglia l entrata.
+      style={{ '--ar': String(photo.ar), '--i': String(index) } as React.CSSProperties}
       onClick={(event) => {
         // Safari non sposta il focus su un button quando lo si clicca: senza
         // questa riga l elemento di origine registrato sarebbe <body>, e alla

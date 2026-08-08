@@ -1,16 +1,79 @@
-.home {
+/* La specifica 8.2 vuole la protagonista quasi a schermo intero. L header e
+   adesivo e traslucido, quindi la fotografia gli scorre sotto: da qui il
+   margine negativo che recupera l altezza dell header. */
+.hero {
+  position: relative;
+  height: 100dvh;
+  margin-top: calc(-1 * var(--header-height, 5.5rem));
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Annulla il rapporto d aspetto di SanityImage: qui la fotografia riempie il
+   riquadro. E l unico ritaglio del sito, e la specifica 8.2 lo consente
+   esplicitamente per adattamenti controllati sulla protagonista. */
+.heroImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  animation: fade var(--duration-reveal) var(--ease) both;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgb(0 0 0 / 0.78) 0%,
+    rgb(0 0 0 / 0.45) 28%,
+    rgb(0 0 0 / 0.08) 58%,
+    rgb(0 0 0 / 0.25) 100%
+  );
+}
+
+.content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--space-6) var(--space-5) var(--space-7);
   max-width: var(--content-max);
   margin: 0 auto;
-  padding: var(--space-7) var(--space-4);
+  display: grid;
+  gap: var(--space-4);
 }
 
-.hero {
-  width: 100%;
-  max-height: 88dvh;
-  overflow: hidden;
-  margin-bottom: var(--space-6);
+.title {
+  /* Il nome e l unico elemento tipografico grande del sito: qui il Bodoni
+     lavora al corpo per cui e disegnato. */
+  animation: reveal var(--duration-reveal) var(--ease-out) both;
+  animation-delay: 180ms;
 }
 
-.title { margin-bottom: var(--space-3); }
+.intro {
+  color: rgb(255 255 255 / 0.82);
+  font-size: 1.0625rem;
+  max-width: 46ch;
+  animation: reveal var(--duration-reveal) var(--ease-out) both;
+  animation-delay: 320ms;
+}
 
-.intro { color: var(--fg-muted); font-size: 1.1rem; }
+.fallback {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (max-width: 767px) {
+  .hero {
+    height: 92dvh;
+  }
+
+  .content {
+    padding: var(--space-5) var(--space-4) var(--space-6);
+  }
+}

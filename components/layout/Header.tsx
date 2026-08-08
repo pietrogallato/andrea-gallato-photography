@@ -9,6 +9,8 @@ import styles from './Header.module.css'
 
 export function Header({ locale, siteName }: { locale: Locale; siteName: string }) {
   const dict = getDictionary(locale)
+  const localePaths = alternatePaths({ key: 'home' })
+  const localeNames = { it: dict.localeNameIt, en: dict.localeNameEn }
 
   return (
     <header className={styles.header}>
@@ -17,21 +19,31 @@ export function Header({ locale, siteName }: { locale: Locale; siteName: string 
       </Link>
 
       <nav aria-label={dict.navGallery} className={styles.nav}>
-        <Link href={pathFor(locale, { key: 'gallery' })} className={styles.link}>
+        <Link href={pathFor(locale, { key: 'gallery' })} className={`${styles.link} label`}>
           {dict.navGallery}
         </Link>
       </nav>
 
-      <MobileMenu locale={locale} dict={dict} />
-
       <div className={styles.controls}>
         <LocaleSwitcher
           current={locale}
-          paths={alternatePaths({ key: 'home' })}
+          paths={localePaths}
           groupLabel={dict.localeGroup}
-          names={{ it: dict.localeNameIt, en: dict.localeNameEn }}
+          names={localeNames}
         />
         <ThemeToggle label={dict.themeToggle} />
+      </div>
+
+      {/* Sotto il breakpoint i controlli vivono qui: nome, lingua e tema su una
+          riga sola sfondavano il viewport, e comprimerli avrebbe reso le aree
+          di tocco piu piccole del minimo di 44px. */}
+      <div className={styles.menu}>
+        <MobileMenu
+          locale={locale}
+          dict={dict}
+          localePaths={localePaths}
+          localeNames={localeNames}
+        />
       </div>
     </header>
   )

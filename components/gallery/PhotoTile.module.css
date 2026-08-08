@@ -6,9 +6,39 @@
   padding: 0;
   border-radius: var(--radius);
   overflow: hidden;
+  background: var(--bg-elevated);
+
+  /* Entrata scaglionata, con il ritardo tagliato a dodici passi: oltre, i
+     gruppi caricati dopo aspetterebbero secondi prima di comparire. Solo
+     opacita e traslazione, mai proprieta di layout: lo spazio e gia riservato
+     dal rapporto d aspetto e il CLS resta zero. */
+  animation: reveal var(--duration-reveal) var(--ease-out) both;
+  animation-delay: calc(min(var(--i, 0), 12) * 45ms);
+}
+
+/* L immagine si avvicina appena. Nessuna didascalia in sovrimpressione: il
+   testo sopra una fotografia e un elemento decorativo che le compete, e il
+   suo contrasto dipenderebbe dallo scatto sottostante, quindi non e
+   verificabile. Titolo, luogo e anno restano nella lightbox. */
+.tile img {
+  transition: transform var(--duration-reveal) var(--ease-out),
+    filter var(--duration-slow) var(--ease);
+}
+
+.tile:hover img,
+.tile:focus-visible img {
+  transform: scale(1.035);
+  filter: brightness(1.06);
 }
 
 .tile:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: var(--focus-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile:hover img,
+  .tile:focus-visible img {
+    transform: none;
+  }
 }

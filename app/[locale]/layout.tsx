@@ -4,6 +4,7 @@ import { LOCALES, DEFAULT_LOCALE, isLocale } from '@/lib/i18n/locales'
 import { getDictionary } from '@/lib/i18n/dictionaries'
 import { pickLocalized } from '@/lib/i18n/localize'
 import { THEME_SCRIPT, DEFAULT_THEME } from '@/lib/theme/script'
+import { display, sans } from '@/lib/fonts'
 import { SkipLink } from '@/components/layout/SkipLink'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
@@ -63,7 +64,12 @@ export default async function LocaleLayout({
   const siteName = settings?.photographerName ?? 'Andrea Gallato'
 
   return (
-    <html lang={locale} data-theme={DEFAULT_THEME} suppressHydrationWarning>
+    <html
+      lang={locale}
+      data-theme={DEFAULT_THEME}
+      className={`${display.variable} ${sans.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script
           type="text/javascript"

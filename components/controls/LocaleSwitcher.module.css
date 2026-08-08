@@ -1,20 +1,42 @@
 .switcher {
   display: flex;
-  gap: var(--space-2);
   align-items: center;
+  gap: var(--space-3);
 }
 
 .link {
   position: relative;
-  padding: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--size-label);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  line-height: 1;
   color: var(--fg-muted);
   text-decoration: none;
-  font-size: 0.875rem;
+  padding: var(--space-2) 0;
+  transition: color var(--duration-fast) var(--ease);
 }
 
+.link:hover {
+  color: var(--fg);
+}
+
+/* La lingua attiva non e sottolineata ma piena: la sottolineatura e riservata
+   agli stati di passaggio, cosi lo stato corrente si legge come un fatto e
+   non come un invito a cliccare. */
 .link[data-current] {
   color: var(--fg);
-  text-decoration: underline;
+}
+
+.link[data-current]::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
 }
 
 .link::after {

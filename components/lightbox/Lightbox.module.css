@@ -10,22 +10,22 @@
   display: grid;
   grid-template-rows: 1fr auto;
   place-items: center;
+  overflow: hidden;
+  animation: fade var(--duration-fast) var(--ease-out) both;
 }
 
 /* Il browser nasconde i dialog chiusi con `dialog:not([open]) { display: none }`,
    ma quella regola dello user agent ha specificita piu bassa di una classe:
    senza questa riga il dialog resta nel flusso fra il montaggio e la chiamata
-   a showModal() nell effect. Conseguenze misurate: l autoFocus sul pulsante di
-   chiusura fa scorrere la pagina fino al dialog, useScrollLock congela quella
-   posizione sbagliata, e showModal() registra come elemento di origine del
-   focus un pulsante gia interno al dialog, quindi alla chiusura il focus
-   finisce su body invece che sulla fotografia da cui si e partiti. */
+   a showModal() nell effect, l autoFocus fa scorrere la pagina fino a esso e
+   il blocco dello scroll congela la posizione sbagliata. */
 .dialog:not([open]) {
   display: none;
 }
 
 .dialog::backdrop {
   background: #000;
+  animation: fade var(--duration-fast) var(--ease) both;
 }
 
 .figure {
@@ -35,10 +35,10 @@
   width: 100%;
   display: grid;
   place-items: center;
-  gap: var(--space-3);
+  gap: var(--space-4);
   max-width: min(100vw, calc(100dvh * 2));
   max-height: 100dvh;
-  padding: var(--space-5) var(--space-4);
+  padding: var(--space-6) var(--space-5) var(--space-5);
   /* pan-y preserva lo scroll verticale, pinch-zoom preserva l ingrandimento,
      che e il meccanismo con cui un utente ipovedente ingrandisce la foto. */
   touch-action: pan-y pinch-zoom;
@@ -49,26 +49,61 @@
    collasserebbe a zero, e con esso l altezza derivata da aspect-ratio.
    La larghezza va quindi derivata dal rapporto e dall altezza massima. */
 .image {
-  width: min(100%, calc(80dvh * var(--ar)));
-  max-height: 80dvh;
+  width: min(100%, calc(78dvh * var(--ar)));
+  max-height: 78dvh;
+  /* La fotografia sale di poco entrando: il movimento e appena percettibile
+     ma toglie alla lightbox l aria di finestra che compare di colpo. */
+  animation: reveal var(--duration-slow) var(--ease-out) both;
+  animation-delay: 40ms;
 }
 
-.close, .prev, .next {
+.close,
+.prev,
+.next {
   position: absolute;
+  display: grid;
+  place-items: center;
   min-width: var(--target-min);
   min-height: var(--target-min);
-  padding: var(--space-2) var(--space-3);
-  color: var(--fg);
+  color: var(--fg-muted);
   border-radius: var(--radius);
+  transition: color var(--duration-fast) var(--ease),
+    opacity var(--duration-fast) var(--ease);
 }
 
-.close { top: var(--space-3); right: var(--space-3); }
-.prev { left: var(--space-3); top: 50%; translate: 0 -50%; }
-.next { right: var(--space-3); top: 50%; translate: 0 -50%; }
+.close:hover,
+.prev:hover,
+.next:hover {
+  color: var(--fg);
+}
 
-.close:focus-visible, .prev:focus-visible, .next:focus-visible {
+.close {
+  top: var(--space-4);
+  right: var(--space-4);
+}
+
+.prev {
+  left: var(--space-3);
+  top: 50%;
+  translate: 0 -50%;
+}
+
+.next {
+  right: var(--space-3);
+  top: 50%;
+  translate: 0 -50%;
+}
+
+.close:focus-visible,
+.prev:focus-visible,
+.next:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: var(--focus-offset);
+  color: var(--fg);
 }
 
-.prev:disabled, .next:disabled { opacity: 0.35; cursor: default; }
+.prev:disabled,
+.next:disabled {
+  opacity: 0.2;
+  cursor: default;
+}

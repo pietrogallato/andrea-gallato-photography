@@ -1,23 +1,80 @@
-h1, h2, h3 {
-  font-family: var(--font-serif);
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
   font-weight: 400;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
+  line-height: 1.05;
+  letter-spacing: var(--tracking-display);
+  text-wrap: balance;
 }
 
-h1 { font-size: clamp(1.75rem, 1.2rem + 2vw, 3rem); }
-h2 { font-size: clamp(1.35rem, 1.1rem + 1vw, 2rem); }
-h3 { font-size: 1.15rem; }
+/* Scala ampia: su un portfolio il titolo e uno dei pochi elementi non
+   fotografici, quindi o e piccolo e si toglie di mezzo, o e grande e vale
+   la pena guardarlo. Le vie di mezzo sembrano indecise. */
+h1 {
+  font-size: clamp(2.5rem, 1.4rem + 5vw, 6rem);
+}
 
-p { max-width: 68ch; }
+h2 {
+  font-size: clamp(1.6rem, 1.1rem + 2vw, 2.75rem);
+}
 
-a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 0.2em; }
+h3 {
+  font-size: clamp(1.15rem, 1rem + 0.6vw, 1.5rem);
+}
+
+p {
+  max-width: 62ch;
+  text-wrap: pretty;
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+}
+
+/* Etichetta: navigazione, pulsanti, didascalie, selettore lingua. Un solo
+   posto in cui e definita, cosi l interfaccia parla con una voce sola. */
+.label {
+  font-family: var(--font-sans);
+  font-size: var(--size-label);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  line-height: 1;
+}
 
 .visually-hidden {
   position: absolute;
-  width: 1px; height: 1px;
-  padding: 0; margin: -1px;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* Entrata: opacita e traslazione soltanto, mai proprieta che cambiano il
+   layout. Lo spazio e gia riservato dai rapporti d aspetto, quindi il
+   contenuto non si sposta e il CLS resta zero. */
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

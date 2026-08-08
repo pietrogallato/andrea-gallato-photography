@@ -1,15 +1,30 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
+/**
+ * Sotto il breakpoint mobile lingua e tema non stanno nell header: vivono nel
+ * pannello del menu, perche su una riga sola sfondavano il viewport. I test
+ * che li usano devono quindi aprirlo prima.
+ */
+async function apriControlli(page: import('@playwright/test').Page, isMobile?: boolean) {
+  if (!isMobile) return
+  // Idempotente: a menu gia aperto il pulsante si chiama "Chiudi il menu",
+  // quindi il localizzatore non trova nulla e non si fa nulla.
+  const trigger = page.getByRole('button', { name: /Apri il menu|Open menu/ })
+  if (await trigger.isVisible().catch(() => false)) await trigger.click()
+}
+
+
 const PAGES = ['/it', '/en', '/it/fotografie', '/en/photographs']
 const THEMES = ['dark', 'light'] as const
 
 for (const path of PAGES) {
   for (const theme of THEMES) {
-    test(`nessuna violazione axe su ${path} in tema ${theme}`, async ({ page }) => {
+    test(`nessuna violazione axe su ${path} in tema ${theme}`, async ({ page, isMobile }) => {
       await page.goto(path)
 
       if (theme === 'light') {
+        await apriControlli(page, isMobile)
         await page.getByRole('button', { name: /Tema chiaro|Light theme/ }).click()
         await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
       }

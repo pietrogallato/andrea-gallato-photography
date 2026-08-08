@@ -6,14 +6,21 @@ import { getDictionary } from '@/lib/i18n/dictionaries'
 
 const dict = getDictionary('it')
 
+const props = {
+  locale: 'it' as const,
+  dict,
+  localePaths: { it: '/it', en: '/en' },
+  localeNames: { it: dict.localeNameIt, en: dict.localeNameEn },
+}
+
 describe('MobileMenu', () => {
   it('parte chiuso e lo dichiara', () => {
-    render(<MobileMenu locale="it" dict={dict} />)
+    render(<MobileMenu {...props} />)
     expect(screen.getByRole('button', { name: dict.openMenu })).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('collega il trigger al pannello che controlla', () => {
-    render(<MobileMenu locale="it" dict={dict} />)
+    render(<MobileMenu {...props} />)
     const trigger = screen.getByRole('button', { name: dict.openMenu })
     const id = trigger.getAttribute('aria-controls')
 
@@ -22,14 +29,14 @@ describe('MobileMenu', () => {
   })
 
   it('apre e aggiorna aria-expanded', async () => {
-    render(<MobileMenu locale="it" dict={dict} />)
+    render(<MobileMenu {...props} />)
     await userEvent.click(screen.getByRole('button', { name: dict.openMenu }))
 
     expect(screen.getByRole('button', { name: dict.closeMenu })).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('chiude con Esc e restituisce il focus al trigger', async () => {
-    render(<MobileMenu locale="it" dict={dict} />)
+    render(<MobileMenu {...props} />)
     const trigger = screen.getByRole('button', { name: dict.openMenu })
 
     await userEvent.click(trigger)
@@ -39,9 +46,19 @@ describe('MobileMenu', () => {
   })
 
   it('espone il collegamento alla galleria quando aperto', async () => {
-    render(<MobileMenu locale="it" dict={dict} />)
+    render(<MobileMenu {...props} />)
     await userEvent.click(screen.getByRole('button', { name: dict.openMenu }))
 
     expect(screen.getByRole('link', { name: dict.navGallery })).toHaveAttribute('href', '/it/fotografie')
+  })
+  it('ospita anche lingua e tema, che sotto il breakpoint escono dall header', async () => {
+    render(<MobileMenu {...props} />)
+    await userEvent.click(screen.getByRole('button', { name: dict.openMenu }))
+
+    // Nome, selettore lingua e interruttore tema su una riga sola sfondavano
+    // il viewport a 390px; comprimerli avrebbe ridotto le aree di tocco sotto
+    // il minimo di 44px. Vivono quindi nel pannello.
+    expect(screen.getByRole('navigation', { name: dict.localeGroup })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: dict.themeToggle })).toBeInTheDocument()
   })
 })

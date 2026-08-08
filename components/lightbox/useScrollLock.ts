@@ -24,7 +24,10 @@ export function useScrollLock() {
       body.style.position = previous.position
       body.style.top = previous.top
       body.style.width = previous.width
-      window.scrollTo(0, y)
+      // `behavior: 'instant'` e obbligatorio: html dichiara scroll-behavior
+      // smooth, che renderebbe animato anche questo ripristino e lascerebbe la
+      // pagina a meta corsa quando la lightbox e gia chiusa.
+      window.scrollTo({ top: y, behavior: 'instant' })
     }
   }, [])
 }

@@ -67,13 +67,14 @@ export function Lightbox({
         {position}
       </div>
 
-      <button
-        type="button"
-        className={styles.close}
-        onClick={onClose}
-        autoFocus
-      >
-        {dict.lightboxClose}
+      {/* Icone con etichetta visivamente nascosta: il nome accessibile resta
+          quello del dizionario, ma i lati della fotografia non portano piu
+          righe di testo lunghe che le competevano. */}
+      <button type="button" className={styles.close} onClick={onClose} autoFocus>
+        <span className="visually-hidden">{dict.lightboxClose}</span>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" strokeWidth="1.25">
+          <path d="M5 5l14 14M19 5L5 19" strokeLinecap="round" />
+        </svg>
       </button>
 
       <figure className={styles.figure}>
@@ -92,7 +93,10 @@ export function Lightbox({
         onClick={() => onNavigate(index - 1)}
         disabled={index === 0}
       >
-        {dict.lightboxPrev}
+        <span className="visually-hidden">{dict.lightboxPrev}</span>
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" strokeWidth="1.25">
+          <path d="M15 4l-9 8 9 8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </button>
 
       <button
@@ -101,7 +105,10 @@ export function Lightbox({
         onClick={() => onNavigate(index + 1)}
         disabled={index === photos.length - 1}
       >
-        {dict.lightboxNext}
+        <span className="visually-hidden">{dict.lightboxNext}</span>
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" strokeWidth="1.25">
+          <path d="M9 4l9 8-9 8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </button>
     </dialog>
   )
