@@ -15,7 +15,7 @@ export function PhotoRow({
   row: Row<GalleryPhoto>
   startIndex: number
   locale: Locale
-  onOpen: (index: number) => void
+  onOpen: (index: number, origin: HTMLElement | null) => void
 }) {
   return (
     <div

@@ -27,17 +27,22 @@ describe('PhotoGrid', () => {
     const onOpen = vi.fn()
     render(<PhotoGrid rows={rows} locale="it" onOpen={onOpen} />)
 
-    await userEvent.click(screen.getAllByRole('button')[2])
-    expect(onOpen).toHaveBeenCalledWith(2)
+    const terzo = screen.getAllByRole('button')[2]
+    await userEvent.click(terzo)
+
+    // Indice assoluto, non quello di riga: la lightbox riceve la sequenza
+    // piatta di tutte le fotografie.
+    expect(onOpen).toHaveBeenCalledWith(2, terzo)
   })
 
   it('e attivabile da tastiera', async () => {
     const onOpen = vi.fn()
     render(<PhotoGrid rows={rows} locale="it" onOpen={onOpen} />)
 
-    screen.getAllByRole('button')[0].focus()
+    const primo = screen.getAllByRole('button')[0]
+    primo.focus()
     await userEvent.keyboard('{Enter}')
-    expect(onOpen).toHaveBeenCalledWith(0)
+    expect(onOpen).toHaveBeenCalledWith(0, primo)
   })
 
   it('imposta il rapporto di ogni tile, da cui il CSS deriva la crescita', () => {
@@ -62,5 +67,20 @@ describe('PhotoGrid', () => {
     const rowEls = container.querySelectorAll('[data-row]')
 
     expect(rowEls[rowEls.length - 1].getAttribute('data-last')).toBe('true')
+  })
+})
+
+describe('origine della lightbox', () => {
+  it('passa il tile come elemento di origine, non lo fa dedurre dal focus', async () => {
+    const onOpen = vi.fn()
+    render(<PhotoGrid rows={rows} locale="it" onOpen={onOpen} />)
+
+    const tile = screen.getAllByRole('button')[1]
+    await userEvent.click(tile)
+
+    // Safari non mette a fuoco un button al clic: dedurre l origine da
+    // document.activeElement darebbe <body>, e alla chiusura della lightbox
+    // il focus non tornerebbe alla fotografia.
+    expect(onOpen).toHaveBeenCalledWith(1, tile)
   })
 })

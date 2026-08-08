@@ -17,7 +17,7 @@ export function PhotoTile({
   rowSumAr: number
   index: number
   locale: Locale
-  onOpen: (index: number) => void
+  onOpen: (index: number, origin: HTMLElement | null) => void
 }) {
   return (
     <button
@@ -29,11 +29,12 @@ export function PhotoTile({
       // --ar guida la crescita flex e il rapporto; --i scaglia l entrata.
       style={{ '--ar': String(photo.ar), '--i': String(index) } as React.CSSProperties}
       onClick={(event) => {
-        // Safari non sposta il focus su un button quando lo si clicca: senza
-        // questa riga l elemento di origine registrato sarebbe <body>, e alla
-        // chiusura della lightbox il focus non tornerebbe alla fotografia.
+        // L origine viene passata esplicitamente, non dedotta dal focus:
+        // Safari non mette a fuoco un button quando lo si clicca, quindi
+        // document.activeElement sarebbe <body> e alla chiusura della
+        // lightbox il focus non tornerebbe alla fotografia.
         event.currentTarget.focus()
-        onOpen(index)
+        onOpen(index, event.currentTarget)
       }}
     >
       <SanityImage

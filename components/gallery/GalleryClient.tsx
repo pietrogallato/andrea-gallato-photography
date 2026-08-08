@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import type { Locale } from '@/lib/i18n/locales'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
 import type { Row } from '@/lib/gallery/packRows'
@@ -9,6 +9,7 @@ import { loadMorePhotos } from '@/app/actions/loadMorePhotos'
 import { PhotoGrid } from './PhotoGrid'
 import { LoadMoreButton } from './LoadMoreButton'
 import { Lightbox } from '@/components/lightbox/Lightbox'
+import { useLightbox } from '@/components/lightbox/useLightbox'
 
 export function GalleryClient({
   initialRows,
@@ -24,32 +25,13 @@ export function GalleryClient({
   const [rows, setRows] = useState(initialRows)
   const [hasMore, setHasMore] = useState(initialHasMore)
   const [error, setError] = useState(false)
-  const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [pending, startTransition] = useTransition()
 
-  // Elemento da cui la lightbox e stata aperta, per restituirgli il focus.
-  // Il ripristino automatico di showModal() non e affidabile: su WebKit il
-  // focus finisce su body, perche la dialog viene smontata da React nello
-  // stesso momento in cui il browser proverebbe a ripristinarlo.
-  const originRef = useRef<HTMLElement | null>(null)
+  // Stato della lightbox condiviso con le pagine di progetto, incluso il
+  // ripristino del focus, che va fatto dopo lo smontaggio.
+  const { openIndex, open, close, navigate } = useLightbox()
 
   const photos = rows.flatMap((row) => row.items)
-
-  function open(index: number) {
-    originRef.current = document.activeElement as HTMLElement | null
-    setOpenIndex(index)
-  }
-
-  function close() {
-    setOpenIndex(null)
-  }
-
-  // Il focus va restituito DOPO lo smontaggio, non dentro close(): li React
-  // non ha ancora rimosso la dialog, e chiudendola il browser sposterebbe di
-  // nuovo il focus subito dopo. Un effect gira a commit avvenuto.
-  useEffect(() => {
-    if (openIndex === null) originRef.current?.focus()
-  }, [openIndex])
 
   function load() {
     setError(false)
@@ -85,7 +67,7 @@ export function GalleryClient({
           locale={locale}
           dict={dict}
           onClose={close}
-          onNavigate={setOpenIndex}
+          onNavigate={navigate}
         />
       ) : null}
     </>

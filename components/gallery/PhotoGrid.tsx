@@ -14,7 +14,7 @@ export function PhotoGrid({
 }: {
   rows: Row<GalleryPhoto>[]
   locale: Locale
-  onOpen: (index: number) => void
+  onOpen: (index: number, origin: HTMLElement | null) => void
 }) {
   let offset = 0
 
