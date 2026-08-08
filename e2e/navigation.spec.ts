@@ -84,3 +84,31 @@ test('lo skip link diventa visibile al primo Tab e porta al contenuto', async ({
   await skip.press('Enter')
   await expect(page).toHaveURL(/#main$/)
 })
+
+test('la pagina About esiste in entrambe le lingue', async ({ page }) => {
+  const it = await page.goto('/it/about')
+  expect(it?.status()).toBe(200)
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+
+  const en = await page.goto('/en/about')
+  expect(en?.status()).toBe(200)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+})
+
+test('About mostra il ritratto con un testo alternativo sensato', async ({ page }) => {
+  await page.goto('/it/about')
+
+  // Lo schema del ritratto non ha un campo alt: il testo si compone dal
+  // dizionario e dal nome del fotografo, quindi non e mai vuoto.
+  const ritratto = page.locator('main img').first()
+  await expect(ritratto).toBeVisible()
+  await expect(ritratto).toHaveAttribute('alt', /Ritratto di/)
+})
+
+test('la voce About porta alla pagina About', async ({ page, isMobile }) => {
+  await page.goto('/it')
+  if (isMobile) await page.getByRole('button', { name: /Apri il menu|Open menu/ }).click()
+
+  await page.getByRole('link', { name: 'About' }).click()
+  await expect(page).toHaveURL('/it/about')
+})

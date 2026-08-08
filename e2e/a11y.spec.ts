@@ -15,7 +15,7 @@ async function apriControlli(page: import('@playwright/test').Page, isMobile?: b
 }
 
 
-const PAGES = ['/it', '/en', '/it/fotografie', '/en/photographs']
+const PAGES = ['/it', '/en', '/it/fotografie', '/en/photographs', '/it/about', '/en/about']
 const THEMES = ['dark', 'light'] as const
 
 for (const path of PAGES) {

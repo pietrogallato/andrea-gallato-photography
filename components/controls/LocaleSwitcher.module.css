@@ -1,7 +1,13 @@
 .switcher {
-  display: flex;
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  /* Colonne di larghezza identica: i due codici hanno due lettere, quindi
+     l indicatore percorre esattamente meta larghezza e non va calcolato. */
+  grid-auto-columns: 1fr;
   align-items: center;
   gap: var(--space-3);
+  padding-bottom: var(--space-2);
 }
 
 .link {
@@ -10,35 +16,24 @@
   font-size: var(--size-label);
   font-weight: 500;
   letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   line-height: 1;
+  text-align: center;
   color: var(--fg-muted);
   text-decoration: none;
-  padding: var(--space-2) 0;
-  transition: color var(--duration-fast) var(--ease);
+  padding: var(--space-2) var(--space-1);
+  transition: color var(--duration-slow) var(--ease);
 }
 
 .link:hover {
   color: var(--fg);
 }
 
-/* La lingua attiva non e sottolineata ma piena: la sottolineatura e riservata
-   agli stati di passaggio, cosi lo stato corrente si legge come un fatto e
-   non come un invito a cliccare. */
 .link[data-current] {
   color: var(--fg);
 }
 
-.link[data-current]::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: currentColor;
-}
-
+/* Area di tocco piena, invisibile: i codici sono piccoli per scelta grafica,
+   ma il bersaglio resta di 44px come impone WCAG 2.5.8. */
 .link::after {
   content: '';
   position: absolute;
@@ -48,4 +43,27 @@
   min-height: var(--target-min);
   width: 100%;
   height: 100%;
+}
+
+.indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  /* Meta della larghezza totale meno meta dello spazio fra i codici. */
+  width: calc((100% - var(--space-3)) / 2);
+  background: var(--fg);
+  transition: transform var(--duration-slow) var(--ease-out);
+}
+
+/* La posizione la detta l attributo sul contenitore, quindi il movimento
+   funziona senza una riga di JavaScript. */
+.switcher[data-current='en'] .indicator {
+  transform: translateX(calc(100% + var(--space-3)));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicator {
+    transition: none;
+  }
 }

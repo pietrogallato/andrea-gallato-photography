@@ -1,0 +1,104 @@
+.about {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-5) var(--space-6);
+}
+
+.title {
+  margin-bottom: var(--space-6);
+  animation: reveal var(--duration-slow) var(--ease-out) both;
+}
+
+/* Il ritratto occupa una colonna stretta e il testo una larga: e la
+   proporzione dell impaginato editoriale, e tiene la riga di lettura entro i
+   62ch anche su schermi molto larghi. */
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.portrait {
+  animation: reveal var(--duration-reveal) var(--ease-out) both;
+  animation-delay: 80ms;
+}
+
+.text {
+  display: grid;
+  gap: var(--space-6);
+  animation: reveal var(--duration-reveal) var(--ease-out) both;
+  animation-delay: 180ms;
+}
+
+/* La biografia e il testo di apertura: piu grande del resto, come un occhiello
+   di giornale, cosi la pagina ha un punto d ingresso chiaro. */
+.bio {
+  font-size: clamp(1.125rem, 1rem + 0.5vw, 1.375rem);
+  line-height: 1.5;
+  color: var(--fg);
+}
+
+.section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.heading {
+  font-family: var(--font-sans);
+  font-size: var(--size-label);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+.contacts {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.contactLink {
+  position: relative;
+  display: inline-block;
+  padding: var(--space-2) 0;
+  color: var(--fg);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease);
+}
+
+.contactLink::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--space-1);
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(1);
+  transform-origin: left;
+  transition: transform var(--duration-slow) var(--ease-out);
+}
+
+.contactLink:hover::before,
+.contactLink:focus-visible::before {
+  transform: scaleX(0);
+  transform-origin: right;
+}
+
+@media (max-width: 767px) {
+  .about {
+    padding: var(--space-6) var(--space-4) var(--space-5);
+  }
+
+  .body {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+
+  .portrait {
+    max-width: 20rem;
+  }
+}

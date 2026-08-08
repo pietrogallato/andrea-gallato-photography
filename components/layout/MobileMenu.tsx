@@ -54,13 +54,20 @@ export function MobileMenu({
       </button>
 
       <div id={panelId} className={styles.panel} hidden={!open}>
-        <nav aria-label={dict.navGallery} className={styles.nav}>
+        <nav aria-label={dict.navPrimary} className={styles.nav}>
           <Link
             href={pathFor(locale, { key: 'gallery' })}
             className={styles.navLink}
             onClick={close}
           >
             {dict.navGallery}
+          </Link>
+          <Link
+            href={pathFor(locale, { key: 'about' })}
+            className={styles.navLink}
+            onClick={close}
+          >
+            {dict.navAbout}
           </Link>
         </nav>
 

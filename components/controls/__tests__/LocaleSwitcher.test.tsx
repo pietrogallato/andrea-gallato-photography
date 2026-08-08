@@ -38,4 +38,22 @@ describe('LocaleSwitcher', () => {
 
     expect(screen.getByRole('navigation', { name: 'Lingua' })).toBeInTheDocument()
   })
+  it('mostra il codice di due lettere ma conserva il nome per esteso', () => {
+    render(<LocaleSwitcher current="it" paths={paths} groupLabel="Lingua" names={{ it: 'Italiano', en: 'English' }} />)
+
+    const italiano = screen.getByRole('link', { name: 'Italiano' })
+    expect(italiano).toHaveTextContent('IT')
+
+    // WCAG 2.5.3 Label in Name: l etichetta visibile deve far parte del nome
+    // accessibile, altrimenti chi comanda a voce non puo dire cio che legge.
+    expect('Italiano'.toUpperCase()).toContain(italiano.textContent!.trim())
+  })
+
+  it('dichiara la lingua corrente sul contenitore, da cui il CSS muove l indicatore', () => {
+    const { container } = render(
+      <LocaleSwitcher current="en" paths={paths} groupLabel="Lingua" names={{ it: 'Italiano', en: 'English' }} />,
+    )
+
+    expect(container.querySelector('nav')).toHaveAttribute('data-current', 'en')
+  })
 })

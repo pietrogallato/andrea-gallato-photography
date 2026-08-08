@@ -30,9 +30,12 @@ describe('Header', () => {
     expect(screen.getByRole('button', { name: 'Tema chiaro' })).toBeInTheDocument()
   })
 
-  it('non linka Progetti e About in questa fase', () => {
+  it('linka About, e non ancora Progetti', () => {
     render(<Header locale="it" siteName="Andrea Gallato" />)
+    expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute('href', '/it/about')
+
+    // I progetti arrivano con le loro pagine: finche non esistono, linkarli
+    // porterebbe a una 404.
     expect(screen.queryByRole('link', { name: 'Progetti' })).toBeNull()
-    expect(screen.queryByRole('link', { name: 'About' })).toBeNull()
   })
 })

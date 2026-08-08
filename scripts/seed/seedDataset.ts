@@ -102,7 +102,37 @@ async function main() {
     })),
   })
 
+  // Il ritratto e un campo immagine proprio, non un riferimento a una photo:
+  // serve quindi un asset dedicato. Riusa un placeholder di taglio verticale.
+  const ritratto = plan.find((s) => s.ratioName === '2-3') ?? plan[0]
+  const portraitAsset = await client.assets.upload(
+    'image',
+    createReadStream(path.join(OUTPUT_DIR, ritratto.filename)),
+    { filename: `ritratto-${ritratto.filename}` },
+  )
+
+  await client.createOrReplace({
+    _id: 'aboutPage',
+    _type: 'aboutPage',
+    portrait: { _type: 'image', asset: { _type: 'reference', _ref: portraitAsset._id } },
+    // Testi dichiaratamente provvisori. Non inventiamo una biografia: i fatti
+    // su una persona reale li scrive lei, dallo Studio.
+    bioIt:
+      'Testo provvisorio, da sostituire dallo Studio. Qui va la biografia breve di Andrea Gallato: come ha iniziato a fotografare, che cosa fotografa, dove lavora.',
+    bioEn:
+      'Placeholder text, to be replaced from the Studio. This is where Andrea Gallato\u2019s short biography goes: how he started photographing, what he photographs, where he works.',
+    statementIt:
+      'Testo provvisorio, da sostituire dallo Studio. Qui va lo statement artistico: che cosa cerca Andrea nelle sue fotografie, e perche.',
+    statementEn:
+      'Placeholder text, to be replaced from the Studio. This is where the artistic statement goes: what Andrea looks for in his photographs, and why.',
+    email: 'info@example.com',
+    socialLinks: [
+      { _key: 'ig', label: 'Instagram', url: 'https://instagram.com/example' },
+    ],
+  })
+
   console.log(`\nFatto. ${photoIds.length} fotografie sul dataset "${dataset}".`)
+  console.log('Pagina About creata con testi PROVVISORI: vanno riscritti dallo Studio.')
   console.log('Nota: siteSettings non ha socialImage, obbligatoria per la pubblicazione.')
   console.log('Va caricata a mano dallo Studio prima di testare la pubblicazione.')
 }

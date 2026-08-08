@@ -2,6 +2,7 @@ import type { Dictionary } from './it'
 
 export const en: Dictionary = {
   skipToContent: 'Skip to content',
+  navPrimary: 'Main navigation',
   navGallery: 'Photographs',
   navProjects: 'Projects',
   navAbout: 'About',
@@ -22,5 +23,8 @@ export const en: Dictionary = {
   lightboxLabel: 'Photograph viewer',
   lightboxClose: 'Close',
   lightboxPrev: 'Previous photograph',
+  aboutStatementHeading: 'Statement',
+  aboutContactHeading: 'Contact',
+  portraitOf: 'Portrait of',
   lightboxNext: 'Next photograph',
 }

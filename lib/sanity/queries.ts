@@ -41,3 +41,15 @@ export const homeHeroQuery = defineQuery(`
     "heroPhoto": heroPhoto->{${PHOTO_FIELDS}}
   }
 `)
+
+export const aboutPageQuery = defineQuery(`
+  *[_type == "aboutPage"][0]{
+    bioIt, bioEn,
+    statementIt, statementEn,
+    email,
+    socialLinks[]{label, url},
+    "portraitUrl": portrait.asset->url,
+    "portraitAr": portrait.asset->metadata.dimensions.aspectRatio,
+    "portraitLqip": portrait.asset->metadata.lqip
+  }
+`)

@@ -1,5 +1,6 @@
 export const it = {
   skipToContent: 'Vai al contenuto',
+  navPrimary: 'Navigazione principale',
   navGallery: 'Fotografie',
   navProjects: 'Progetti',
   navAbout: 'About',
@@ -20,6 +21,9 @@ export const it = {
   lightboxLabel: 'Visualizzatore fotografie',
   lightboxClose: 'Chiudi',
   lightboxPrev: 'Fotografia precedente',
+  aboutStatementHeading: 'Statement',
+  aboutContactHeading: 'Contatti',
+  portraitOf: 'Ritratto di',
   lightboxNext: 'Fotografia successiva',
 } as const
 

@@ -18,9 +18,12 @@ export function Header({ locale, siteName }: { locale: Locale; siteName: string 
         {siteName}
       </Link>
 
-      <nav aria-label={dict.navGallery} className={styles.nav}>
+      <nav aria-label={dict.navPrimary} className={styles.nav}>
         <Link href={pathFor(locale, { key: 'gallery' })} className={`${styles.link} label`}>
           {dict.navGallery}
+        </Link>
+        <Link href={pathFor(locale, { key: 'about' })} className={`${styles.link} label`}>
+          {dict.navAbout}
         </Link>
       </nav>
 
