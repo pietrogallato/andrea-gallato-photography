@@ -1,0 +1,45 @@
+/* Sequenza verticale con spaziatura generosa (specifica di prodotto 8.4): una
+   fotografia per volta, non una griglia. Il progetto si guarda scorrendo,
+   come si sfoglia una serie stampata. */
+.sequence {
+  display: grid;
+  gap: var(--space-7);
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 0 var(--space-5);
+}
+
+.item {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.item img {
+  transition: transform var(--duration-reveal) var(--ease-out);
+}
+
+.item:hover img,
+.item:focus-visible img {
+  transform: scale(1.02);
+}
+
+@media (max-width: 767px) {
+  .sequence {
+    gap: var(--space-5);
+    padding: 0 var(--space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item:hover img,
+  .item:focus-visible img {
+    transform: none;
+  }
+}

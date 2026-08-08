@@ -1,0 +1,35 @@
+.project {
+  padding: var(--space-6) 0 0;
+}
+
+/* L introduzione sta su una colonna di lettura, non a tutta larghezza: e
+   testo, e va trattato come tale anche in mezzo alle fotografie. */
+.header {
+  max-width: 62ch;
+  margin: 0 auto var(--space-7);
+  padding: 0 var(--space-5);
+  display: grid;
+  gap: var(--space-3);
+  animation: reveal var(--duration-slow) var(--ease-out) both;
+}
+
+.year {
+  font-family: var(--font-sans);
+  font-size: var(--size-label);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+.description {
+  font-size: 1.0625rem;
+  color: var(--fg-muted);
+}
+
+@media (max-width: 767px) {
+  .header {
+    padding: 0 var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+}
