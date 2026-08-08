@@ -54,10 +54,14 @@ export function Lightbox({
       ref={ref}
       className={`${styles.dialog} surface-dark`}
       aria-label={label}
-      // Solo onClose: il browser gestisce Esc nativamente su un dialog aperto
-      // con showModal(), emettendo prima cancel e poi close. Collegare
-      // entrambi farebbe scattare la chiusura due volte.
-      onClose={onClose}
+      // onCancel, non onClose. `cancel` scatta solo su una richiesta di
+      // chiusura dell utente (Esc); `close` scatta per qualunque chiusura,
+      // inclusa la nostra in fase di smontaggio. Collegare `close` fa
+      // smontare la lightbox subito dopo l apertura in sviluppo, dove React
+      // monta due volte: effect apre, cleanup chiama close() accodando
+      // l evento, il secondo effect riapre, e l evento accodato arriva e
+      // chiude tutto. E il lampo che si vede cliccando una fotografia.
+      onCancel={onClose}
     >
       <div role="status" aria-live="polite" className="visually-hidden">
         {position}

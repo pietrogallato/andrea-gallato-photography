@@ -29,6 +29,10 @@
 }
 
 .figure {
+  /* Senza width la figure e un elemento di griglia centrato, quindi si
+     dimensiona sul contenuto: finiva per essere larga quanto la didascalia,
+     e l immagine che ne chiede il 100% ne ereditava la larghezza. */
+  width: 100%;
   display: grid;
   place-items: center;
   gap: var(--space-3);
@@ -40,7 +44,12 @@
   touch-action: pan-y pinch-zoom;
 }
 
+/* Il contenitore di SanityImage contiene solo un immagine in posizione
+   assoluta, quindi non ha larghezza intrinseca: dentro un grid centrato
+   collasserebbe a zero, e con esso l altezza derivata da aspect-ratio.
+   La larghezza va quindi derivata dal rapporto e dall altezza massima. */
 .image {
+  width: min(100%, calc(80dvh * var(--ar)));
   max-height: 80dvh;
 }
 
