@@ -5,6 +5,7 @@ import { getDictionary } from '@/lib/i18n/dictionaries'
 import { pickLocalized } from '@/lib/i18n/localize'
 import { THEME_SCRIPT, DEFAULT_THEME } from '@/lib/theme/script'
 import { display, sans } from '@/lib/fonts'
+import { siteUrl } from '@/lib/siteUrl'
 import { ThemeScript } from '@/components/theme/ThemeScript'
 import { SkipLink } from '@/components/layout/SkipLink'
 import { Header } from '@/components/layout/Header'
@@ -40,7 +41,7 @@ export async function generateMetadata({
   ).value
 
   return {
-    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+    metadataBase: new URL(siteUrl()),
     title: title || name,
     description: description || undefined,
   }
