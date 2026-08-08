@@ -4,8 +4,6 @@ out/
 *.tsbuildinfo
 .env.local
 .env*.local
-schema.json
-lib/sanity/types.generated.ts
 e2e/.auth/
 playwright-report/
 test-results/
