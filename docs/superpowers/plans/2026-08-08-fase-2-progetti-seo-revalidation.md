@@ -194,10 +194,14 @@ describe('query dei progetti', () => {
     expect(projectBySlugQuery).not.toMatch(/slug\.current\s*==\s*"/)
   })
 
-  it('il dettaglio scarta i riferimenti non risolvibili', () => {
-    // Un riferimento rimasto appeso non deve rompere l intera pagina
-    // (specifica di prodotto 12).
-    expect(projectBySlugQuery).toContain('defined(@)')
+  it('scarta i riferimenti non risolvibili FILTRANDO PRIMA di dereferenziare', () => {
+    // Misurato sul dataset reale: la forma `photos[]->{...}[defined(@)]`,
+    // col filtro dopo la proiezione, restituisce un array di null anche
+    // quando tutti i riferimenti sono validi. La pagina si renderizzerebbe
+    // vuota. Il filtro va applicato ai riferimenti, non agli oggetti gia
+    // proiettati (specifica di prodotto 12).
+    expect(projectBySlugQuery).toContain('photos[defined(@->)]->')
+    expect(projectBySlugQuery).not.toContain('}[defined(@)]')
   })
 
   it('il dettaglio conserva l ordine editoriale delle fotografie', () => {
@@ -258,7 +262,7 @@ export const projectBySlugQuery = defineQuery(`
     year,
     "slug": slug.current,
     "cover": cover->{${PROJECT_PHOTO_FIELDS}},
-    "photos": photos[]->{${PROJECT_PHOTO_FIELDS}}[defined(@)]
+    "photos": photos[defined(@->)]->{${PROJECT_PHOTO_FIELDS}}
   }
 `)
 
@@ -365,7 +369,7 @@ describe('toProjectDetail', () => {
 
   it('sopravvive a un progetto senza fotografie', () => {
     // Lo schema ne richiede almeno una, ma un riferimento appeso puo
-    // svuotare l array dopo il filtro defined(@).
+    // svuotare l array dopo il filtro sui riferimenti.
     expect(toProjectDetail({ ...raw, photos: null }, 'it').photos).toEqual([])
   })
 
@@ -1909,7 +1913,7 @@ Coprono la specifica di prodotto §12 con dati degradati: progetto senza fotogra
 
 - [ ] **Step 2: Implementare e verificare**
 
-Le query filtrano già i riferimenti nulli con `[defined(@)]`; questo task verifica che i componenti reggano il risultato.
+Le query filtrano già i riferimenti non risolvibili con `photos[defined(@->)]->{…}`; questo task verifica che i componenti reggano il risultato.
 
 - [ ] **Step 3: Commit**
 

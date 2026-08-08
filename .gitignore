@@ -8,4 +8,5 @@ e2e/.auth/
 playwright-report/
 test-results/
 scripts/seed/generated/
+.idea/
 .DS_Store

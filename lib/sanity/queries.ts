@@ -53,3 +53,48 @@ export const aboutPageQuery = defineQuery(`
     "portraitLqip": portrait.asset->metadata.lqip
   }
 `)
+
+const PROJECT_PHOTO_FIELDS = `
+  _id,
+  altIt, altEn,
+  titleIt, titleEn,
+  placeIt, placeEn,
+  year,
+  "url": image.asset->url,
+  "aspectRatio": image.asset->metadata.dimensions.aspectRatio,
+  "lqip": image.asset->metadata.lqip
+`
+
+export const projectsIndexQuery = defineQuery(`
+  *[_type == "project" && defined(slug.current)] | order(year desc, titleIt asc){
+    _id,
+    titleIt, titleEn,
+    year,
+    "slug": slug.current,
+    "cover": cover->{${PROJECT_PHOTO_FIELDS}}
+  }
+`)
+
+export const projectBySlugQuery = defineQuery(`
+  *[_type == "project" && slug.current == $slug][0]{
+    _id,
+    titleIt, titleEn,
+    descriptionIt, descriptionEn,
+    year,
+    "slug": slug.current,
+    "cover": cover->{${PROJECT_PHOTO_FIELDS}},
+    "photos": photos[defined(@->)]->{${PROJECT_PHOTO_FIELDS}}
+  }
+`)
+
+export const projectSlugsQuery = defineQuery(`
+  *[_type == "project" && defined(slug.current)].slug.current
+`)
+
+export const sitemapQuery = defineQuery(`{
+  "projects": *[_type == "project" && defined(slug.current)]{
+    "slug": slug.current,
+    _updatedAt
+  },
+  "settingsUpdatedAt": *[_type == "siteSettings"][0]._updatedAt
+}`)

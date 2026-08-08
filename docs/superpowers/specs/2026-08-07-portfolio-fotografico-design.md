@@ -195,7 +195,9 @@ client.fetch(query, params, { cache: 'force-cache', next: { tags, revalidate: fa
 
 **`sanityFetch` non chiama mai `draftMode()`.** `draftMode` è una Dynamic API: se il punto di accesso unico ai dati la invocasse, ogni pagina del sito diventerebbe dinamica per tutti i visitatori, annullando l'intera strategia di cache. L'anteprima è isolata come descritto in §12.
 
-Le query stanno in `lib/sanity/queries.ts`, scritte con `defineQuery` importato da `next-sanity`. Ogni query proietta solo i campi necessari e include sempre `asset->metadata.dimensions` e `asset->metadata.lqip`. I riferimenti opzionali sono filtrati con `[defined(@)]` invece di essere assunti presenti.
+Le query stanno in `lib/sanity/queries.ts`, scritte con `defineQuery` importato da `next-sanity`. Ogni query proietta solo i campi necessari e include sempre `asset->metadata.dimensions` e `asset->metadata.lqip`. I riferimenti opzionali vengono filtrati **prima** di essere dereferenziati, con `photos[defined(@->)]->{…}`.
+
+**Correzione dell'8 agosto 2026, misurata sul dataset reale.** Una stesura precedente prescriveva `photos[]->{…}[defined(@)]`, cioè il filtro *dopo* la proiezione. Non è solo inefficace: restituisce un array di `null` anche quando tutti i riferimenti sono validi, perché a quel punto `@` è l'oggetto proiettato e il confronto avviene nel contesto sbagliato. Verificato su un progetto con sette fotografie tutte risolvibili: la forma precedente restituiva sette `null`, la pagina si sarebbe renderizzata vuota.
 
 **TypeGen**: configurazione nel blocco `typegen` di `sanity.cli.ts` (il file `sanity-typegen.json` separato è deprecato), con `path: ['./lib/**/*.ts', './app/**/*.{ts,tsx}', './views/**/*.tsx', './components/**/*.tsx']` — i default puntano a `src/`, che questo repository non ha, e produrrebbero zero query trovate. `generates: './lib/sanity/types.generated.ts'`, che va incluso nell'array `include` di `tsconfig.json`. Due script npm: `sanity schema extract` poi `sanity typegen generate`, più uno step di CI che fallisce se i tipi generati differiscono da quelli committati.
 
@@ -470,7 +472,7 @@ Con `perspective: 'drafts'` il campo `_id` non porta il prefisso `drafts.`; per 
 ## 13. Resilienza
 
 - Fallimento di una richiesta Sanity durante la navigazione: resta servito il contenuto statico più recente.
-- Riferimento opzionale non disponibile: l'elemento è omesso, la pagina non si rompe. Le query filtrano con `[defined(@)]`.
+- Riferimento opzionale non disponibile: l'elemento è omesso, la pagina non si rompe. Le query filtrano i riferimenti prima di dereferenziarli, con `photos[defined(@->)]->{…}`.
 - Immagine non caricabile: riquadro neutro con alt text e dimensioni preservate.
 - Traduzione inglese mancante: italiano, marcato con `lang="it"`.
 - Preferenza tema illeggibile: tema scuro.

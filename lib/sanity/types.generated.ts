@@ -369,6 +369,85 @@ export type AboutPageQueryResult = {
   portraitLqip: string | null;
 } | null;
 
+// Source: lib/sanity/queries.ts
+// Variable: projectsIndexQuery
+// Query: *[_type == "project" && defined(slug.current)] | order(year desc, titleIt asc){    _id,    titleIt, titleEn,    year,    "slug": slug.current,    "cover": cover->{  _id,  altIt, altEn,  titleIt, titleEn,  placeIt, placeEn,  year,  "url": image.asset->url,  "aspectRatio": image.asset->metadata.dimensions.aspectRatio,  "lqip": image.asset->metadata.lqip}  }
+export type ProjectsIndexQueryResult = Array<{
+  _id: string;
+  titleIt: string | null;
+  titleEn: string | null;
+  year: number | null;
+  slug: string | null;
+  cover: {
+    _id: string;
+    altIt: string | null;
+    altEn: string | null;
+    titleIt: string | null;
+    titleEn: string | null;
+    placeIt: string | null;
+    placeEn: string | null;
+    year: number | null;
+    url: string | null;
+    aspectRatio: number | null;
+    lqip: string | null;
+  } | null;
+}>;
+
+// Source: lib/sanity/queries.ts
+// Variable: projectBySlugQuery
+// Query: *[_type == "project" && slug.current == $slug][0]{    _id,    titleIt, titleEn,    descriptionIt, descriptionEn,    year,    "slug": slug.current,    "cover": cover->{  _id,  altIt, altEn,  titleIt, titleEn,  placeIt, placeEn,  year,  "url": image.asset->url,  "aspectRatio": image.asset->metadata.dimensions.aspectRatio,  "lqip": image.asset->metadata.lqip},    "photos": photos[defined(@->)]->{  _id,  altIt, altEn,  titleIt, titleEn,  placeIt, placeEn,  year,  "url": image.asset->url,  "aspectRatio": image.asset->metadata.dimensions.aspectRatio,  "lqip": image.asset->metadata.lqip}  }
+export type ProjectBySlugQueryResult = {
+  _id: string;
+  titleIt: string | null;
+  titleEn: string | null;
+  descriptionIt: string | null;
+  descriptionEn: string | null;
+  year: number | null;
+  slug: string | null;
+  cover: {
+    _id: string;
+    altIt: string | null;
+    altEn: string | null;
+    titleIt: string | null;
+    titleEn: string | null;
+    placeIt: string | null;
+    placeEn: string | null;
+    year: number | null;
+    url: string | null;
+    aspectRatio: number | null;
+    lqip: string | null;
+  } | null;
+  photos: Array<{
+    _id: string;
+    altIt: string | null;
+    altEn: string | null;
+    titleIt: string | null;
+    titleEn: string | null;
+    placeIt: string | null;
+    placeEn: string | null;
+    year: number | null;
+    url: string | null;
+    aspectRatio: number | null;
+    lqip: string | null;
+  }> | null;
+} | null;
+
+// Source: lib/sanity/queries.ts
+// Variable: projectSlugsQuery
+// Query: *[_type == "project" && defined(slug.current)].slug.current
+export type ProjectSlugsQueryResult = Array<string | null>;
+
+// Source: lib/sanity/queries.ts
+// Variable: sitemapQuery
+// Query: {  "projects": *[_type == "project" && defined(slug.current)]{    "slug": slug.current,    _updatedAt  },  "settingsUpdatedAt": *[_type == "siteSettings"][0]._updatedAt}
+export type SitemapQueryResult = {
+  projects: Array<{
+    slug: string | null;
+    _updatedAt: string;
+  }>;
+  settingsUpdatedAt: string | null;
+};
+
 // Query TypeMap
 import "@sanity/client";
 declare module "@sanity/client" {
@@ -379,5 +458,9 @@ declare module "@sanity/client" {
     '\n  count(*[_type == "photo" && showInGallery == true && defined(image.asset)])\n': GalleryCountQueryResult;
     '\n  *[_type == "homePage"][0]{\n    introIt, introEn,\n    "heroPhoto": heroPhoto->{\n  _id,\n  altIt, altEn,\n  titleIt, titleEn,\n  placeIt, placeEn,\n  year,\n  "url": image.asset->url,\n  "aspectRatio": image.asset->metadata.dimensions.aspectRatio,\n  "lqip": image.asset->metadata.lqip\n}\n  }\n': HomeHeroQueryResult;
     '\n  *[_type == "aboutPage"][0]{\n    bioIt, bioEn,\n    statementIt, statementEn,\n    email,\n    socialLinks[]{label, url},\n    "portraitUrl": portrait.asset->url,\n    "portraitAr": portrait.asset->metadata.dimensions.aspectRatio,\n    "portraitLqip": portrait.asset->metadata.lqip\n  }\n': AboutPageQueryResult;
+    '\n  *[_type == "project" && defined(slug.current)] | order(year desc, titleIt asc){\n    _id,\n    titleIt, titleEn,\n    year,\n    "slug": slug.current,\n    "cover": cover->{\n  _id,\n  altIt, altEn,\n  titleIt, titleEn,\n  placeIt, placeEn,\n  year,\n  "url": image.asset->url,\n  "aspectRatio": image.asset->metadata.dimensions.aspectRatio,\n  "lqip": image.asset->metadata.lqip\n}\n  }\n': ProjectsIndexQueryResult;
+    '\n  *[_type == "project" && slug.current == $slug][0]{\n    _id,\n    titleIt, titleEn,\n    descriptionIt, descriptionEn,\n    year,\n    "slug": slug.current,\n    "cover": cover->{\n  _id,\n  altIt, altEn,\n  titleIt, titleEn,\n  placeIt, placeEn,\n  year,\n  "url": image.asset->url,\n  "aspectRatio": image.asset->metadata.dimensions.aspectRatio,\n  "lqip": image.asset->metadata.lqip\n},\n    "photos": photos[defined(@->)]->{\n  _id,\n  altIt, altEn,\n  titleIt, titleEn,\n  placeIt, placeEn,\n  year,\n  "url": image.asset->url,\n  "aspectRatio": image.asset->metadata.dimensions.aspectRatio,\n  "lqip": image.asset->metadata.lqip\n}\n  }\n': ProjectBySlugQueryResult;
+    '\n  *[_type == "project" && defined(slug.current)].slug.current\n': ProjectSlugsQueryResult;
+    '{\n  "projects": *[_type == "project" && defined(slug.current)]{\n    "slug": slug.current,\n    _updatedAt\n  },\n  "settingsUpdatedAt": *[_type == "siteSettings"][0]._updatedAt\n}': SitemapQueryResult;
   }
 }
