@@ -17,6 +17,7 @@ export const en: Dictionary = {
   retry: 'Try again',
   errorGeneric: 'Something went wrong.',
   emptyGallery: 'No photographs published yet.',
+  emptyProjects: 'No projects published yet.',
   notFoundTitle: 'Page not found',
   notFoundBody: 'The page you are looking for does not exist or has moved.',
   backHome: 'Back to home',

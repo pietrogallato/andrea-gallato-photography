@@ -1,0 +1,10 @@
+.projects {
+  padding: var(--space-6) 0 0;
+}
+
+.heading {
+  max-width: var(--content-max);
+  margin: 0 auto var(--space-6);
+  padding: 0 var(--space-5);
+  animation: reveal var(--duration-slow) var(--ease-out) both;
+}

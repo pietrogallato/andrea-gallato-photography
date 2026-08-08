@@ -15,6 +15,7 @@ export const it = {
   retry: 'Riprova',
   errorGeneric: 'Qualcosa non ha funzionato.',
   emptyGallery: 'Nessuna fotografia pubblicata al momento.',
+  emptyProjects: 'Nessun progetto pubblicato al momento.',
   notFoundTitle: 'Pagina non trovata',
   notFoundBody: 'La pagina che cerchi non esiste o è stata spostata.',
   backHome: 'Torna alla home',
