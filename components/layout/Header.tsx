@@ -1,15 +1,14 @@
 import Link from 'next/link'
 import { type Locale } from '@/lib/i18n/locales'
 import { getDictionary } from '@/lib/i18n/dictionaries'
-import { pathFor, alternatePaths } from '@/lib/i18n/routes'
+import { pathFor } from '@/lib/i18n/routes'
 import { ThemeToggle } from '@/components/controls/ThemeToggle'
-import { LocaleSwitcher } from '@/components/controls/LocaleSwitcher'
+import { LocaleNav } from '@/components/controls/LocaleNav'
 import { MobileMenu } from './MobileMenu'
 import styles from './Header.module.css'
 
 export function Header({ locale, siteName }: { locale: Locale; siteName: string }) {
   const dict = getDictionary(locale)
-  const localePaths = alternatePaths({ key: 'home' })
   const localeNames = { it: dict.localeNameIt, en: dict.localeNameEn }
 
   return (
@@ -28,12 +27,7 @@ export function Header({ locale, siteName }: { locale: Locale; siteName: string 
       </nav>
 
       <div className={styles.controls}>
-        <LocaleSwitcher
-          current={locale}
-          paths={localePaths}
-          groupLabel={dict.localeGroup}
-          names={localeNames}
-        />
+        <LocaleNav current={locale} groupLabel={dict.localeGroup} names={localeNames} />
         <ThemeToggle label={dict.themeToggle} />
       </div>
 
@@ -41,12 +35,7 @@ export function Header({ locale, siteName }: { locale: Locale; siteName: string 
           riga sola sfondavano il viewport, e comprimerli avrebbe reso le aree
           di tocco piu piccole del minimo di 44px. */}
       <div className={styles.menu}>
-        <MobileMenu
-          locale={locale}
-          dict={dict}
-          localePaths={localePaths}
-          localeNames={localeNames}
-        />
+        <MobileMenu locale={locale} dict={dict} localeNames={localeNames} />
       </div>
     </header>
   )

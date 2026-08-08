@@ -112,3 +112,41 @@ test('la voce About porta alla pagina About', async ({ page, isMobile }) => {
   await page.getByRole('link', { name: 'About' }).click()
   await expect(page).toHaveURL('/it/about')
 })
+
+test('il selettore lingua resta sulla stessa pagina, non riporta alla home', async ({
+  page,
+  isMobile,
+}) => {
+  await page.goto('/it/about')
+  await apriControlli(page, isMobile)
+  await page.getByRole('link', { name: 'English' }).click()
+
+  await expect(page).toHaveURL('/en/about')
+})
+
+test('resta sulla stessa pagina anche dalla galleria, dove il segmento cambia nome', async ({
+  page,
+  isMobile,
+}) => {
+  await page.goto('/it/fotografie')
+  await apriControlli(page, isMobile)
+  await page.getByRole('link', { name: 'English' }).click()
+
+  await expect(page).toHaveURL('/en/photographs')
+})
+
+test('gli href del selettore puntano alla pagina corrente gia nell HTML, senza JavaScript', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    viewport: { width: 1280, height: 720 },
+  })
+  const page = await context.newPage()
+  await page.goto('/it/about')
+
+  // Il selettore e reso anche in SSR: se dipendesse dall idratazione, qui
+  // troveremmo ancora il collegamento alla home.
+  await expect(page.getByRole('link', { name: 'English' })).toHaveAttribute('href', '/en/about')
+  await context.close()
+})

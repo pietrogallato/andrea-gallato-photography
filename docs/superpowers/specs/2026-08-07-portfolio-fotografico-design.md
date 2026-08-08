@@ -136,7 +136,9 @@ Questo elimina il middleware. Sei problemi cadono insieme: non serve produrre un
 
 **Generazione statica**: `generateStaticParams` enumera a build time tutte le combinazioni note, inclusi gli slug dei progetti pubblicati. `dynamicParams` resta al default `true`, così un progetto pubblicato dopo il build viene generato su richiesta invece di dare 404 fino al deploy successivo; la validazione dentro la catch-all garantisce comunque il 404 sui percorsi inesistenti.
 
-`resolveRoute` e `alternatePaths(routeKey, params)` alimentano anche `canonical`, `hreflang` e il selettore lingua. Lo slug di progetto è identico nelle due lingue, quindi `alternatePaths` traduce solo prefisso di lingua e segmento.
+`resolveRoute` e `alternatePaths(routeKey, params)` alimentano anche `canonical`, `hreflang` e il selettore lingua.
+
+**Correzione dell'8 agosto 2026.** Una stesura precedente vietava `usePathname` nel selettore lingua, perché con i rewrite del middleware il percorso letto sul client differiva da quello reso sul server, producendo href sbagliati e un errore di idratazione. Quell'architettura è stata abbandonata in favore della catch-all (§4.2), quindi il percorso è ora quello pubblico reale e coincide fra server e client. Il selettore lo usa tramite `alternatePathsForPathname`, funzione pura e testata: l'header vive nel layout, che non riceve i segmenti della pagina figlia, e senza questo riporterebbe sempre alla home — contro la specifica di prodotto §6. Essendo reso anche in SSR, gli href restano corretti nell'HTML iniziale e funzionano senza JavaScript. Lo slug di progetto è identico nelle due lingue, quindi `alternatePaths` traduce solo prefisso di lingua e segmento.
 
 ### 4.3 Localizzazione dei contenuti
 

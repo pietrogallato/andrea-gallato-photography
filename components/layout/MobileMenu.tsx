@@ -5,19 +5,17 @@ import Link from 'next/link'
 import type { Locale } from '@/lib/i18n/locales'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
 import { pathFor } from '@/lib/i18n/routes'
-import { LocaleSwitcher } from '@/components/controls/LocaleSwitcher'
+import { LocaleNav } from '@/components/controls/LocaleNav'
 import { ThemeToggle } from '@/components/controls/ThemeToggle'
 import styles from './MobileMenu.module.css'
 
 export function MobileMenu({
   locale,
   dict,
-  localePaths,
   localeNames,
 }: {
   locale: Locale
   dict: Dictionary
-  localePaths: Record<Locale, string>
   localeNames: Record<Locale, string>
 }) {
   const [open, setOpen] = useState(false)
@@ -72,12 +70,7 @@ export function MobileMenu({
         </nav>
 
         <div className={styles.controls}>
-          <LocaleSwitcher
-            current={locale}
-            paths={localePaths}
-            groupLabel={dict.localeGroup}
-            names={localeNames}
-          />
+          <LocaleNav current={locale} groupLabel={dict.localeGroup} names={localeNames} />
           <ThemeToggle label={dict.themeToggle} />
         </div>
       </div>

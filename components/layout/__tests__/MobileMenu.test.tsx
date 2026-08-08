@@ -9,7 +9,6 @@ const dict = getDictionary('it')
 const props = {
   locale: 'it' as const,
   dict,
-  localePaths: { it: '/it', en: '/en' },
   localeNames: { it: dict.localeNameIt, en: dict.localeNameEn },
 }
 

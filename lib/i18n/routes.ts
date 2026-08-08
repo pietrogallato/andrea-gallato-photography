@@ -46,3 +46,18 @@ export function alternatePaths(resolved: Resolved): Record<Locale, string> {
     LOCALES.map((locale) => [locale, pathFor(locale, resolved)]),
   ) as Record<Locale, string>
 }
+
+/**
+ * Percorsi equivalenti nelle due lingue a partire da un percorso pubblico.
+ *
+ * Serve al selettore lingua, che deve portare alla pagina corrispondente e non
+ * alla home (specifica di prodotto 6). Ricade sulla home quando il percorso
+ * non risolve: una lingua non supportata, un segmento inesistente o la radice.
+ */
+export function alternatePathsForPathname(pathname: string): Record<Locale, string> {
+  const [, maybeLocale = '', ...rest] = pathname.split('/')
+  if (!LOCALES.includes(maybeLocale as Locale)) return alternatePaths({ key: 'home' })
+
+  const resolved = resolveRoute(maybeLocale as Locale, rest.filter(Boolean))
+  return alternatePaths(resolved ?? { key: 'home' })
+}

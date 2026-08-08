@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveRoute, pathFor, alternatePaths } from '../routes'
+import { resolveRoute, pathFor, alternatePaths, alternatePathsForPathname } from '../routes'
 
 describe('resolveRoute', () => {
   it('risolve la homepage con segmenti vuoti', () => {
@@ -65,5 +65,42 @@ describe('alternatePaths', () => {
       it: '/it/progetti/nebbia',
       en: '/en/projects/nebbia',
     })
+  })
+})
+
+describe('alternatePathsForPathname', () => {
+  it('resta sulla stessa pagina invece di riportare alla home', () => {
+    expect(alternatePathsForPathname('/it/about')).toEqual({ it: '/it/about', en: '/en/about' })
+  })
+
+  it('traduce il segmento quando le due lingue lo scrivono diverso', () => {
+    expect(alternatePathsForPathname('/it/fotografie')).toEqual({
+      it: '/it/fotografie',
+      en: '/en/photographs',
+    })
+    expect(alternatePathsForPathname('/en/photographs')).toEqual({
+      it: '/it/fotografie',
+      en: '/en/photographs',
+    })
+  })
+
+  it('conserva lo slug di progetto', () => {
+    expect(alternatePathsForPathname('/it/progetti/nebbia')).toEqual({
+      it: '/it/progetti/nebbia',
+      en: '/en/projects/nebbia',
+    })
+  })
+
+  it('gestisce la home e la barra finale', () => {
+    expect(alternatePathsForPathname('/it')).toEqual({ it: '/it', en: '/en' })
+    expect(alternatePathsForPathname('/it/')).toEqual({ it: '/it', en: '/en' })
+  })
+
+  it('ricade sulla home quando il percorso non risolve', () => {
+    // Lingua non supportata, nome canonico interno, radice: in tutti e tre i
+    // casi il selettore deve comunque portare da qualche parte di valido.
+    expect(alternatePathsForPathname('/fr/qualcosa')).toEqual({ it: '/it', en: '/en' })
+    expect(alternatePathsForPathname('/it/gallery')).toEqual({ it: '/it', en: '/en' })
+    expect(alternatePathsForPathname('/')).toEqual({ it: '/it', en: '/en' })
   })
 })
