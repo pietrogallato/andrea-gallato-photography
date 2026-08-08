@@ -18,8 +18,8 @@ test('l immagine social fissa il formato invece di negoziarlo', async ({ page })
   await page.goto('/it')
   const og = await page.locator('meta[property="og:image"]').getAttribute('content')
 
-  // auto=format dipende dall header Accept, che gli scraper social non
-  // mandano in modo affidabile.
+  // Formato fissato per determinismo, non per un guasto osservato: misurato
+  // che auto=format oggi restituirebbe comunque JPEG agli scraper.
   expect(og).toContain('fm=jpg')
   expect(og).not.toContain('auto=format')
 })

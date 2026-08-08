@@ -1987,7 +1987,9 @@ Su una pagina di progetto in produzione, verificare canonical assoluto, entrambi
 
 - [ ] **Step 3: Anteprima social reale**
 
-Incollare l'URL di una pagina di progetto in un validatore di anteprime social e verificare che l'immagine venga renderizzata. È l'unico modo di sapere se `fm=jpg` era necessario davvero.
+**Esito dell'8 agosto 2026: `fm=jpg` non era necessario.** Confrontando le due forme come le vedrebbe uno scraper — senza header `Accept`, con `Accept` permissivo, e con lo user-agent di `facebookexternalhit` — `auto=format` restituisce JPEG in tutti i casi, con byte identici. Il CDN Sanity serve webp soltanto quando l'`Accept` lo elenca esplicitamente.
+
+La regola resta comunque, ma la motivazione è cambiata: non corregge un guasto osservato, elimina la dipendenza dal comportamento di negoziazione del CDN, che può cambiare senza preavviso. Le affermazioni contrarie sono state corrette nel codice, nel design e nei commenti dei test.
 
 - [ ] **Step 4: Ciclo editoriale**
 

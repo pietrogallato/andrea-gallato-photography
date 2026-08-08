@@ -43,9 +43,18 @@ export function buildImageUrl(src: string, width: number, options: ImageUrlOptio
 /**
  * URL per gli scraper social.
  *
- * Il formato e fissato invece che negoziato: `auto=format` dipende dall header
- * Accept, che i crawler non mandano in modo affidabile, e l anteprima
- * arriverebbe in un formato che non sanno rendere — o non arriverebbe affatto.
+ * Il formato e fissato invece che negoziato. **Misurato l 8 agosto 2026:** il
+ * CDN Sanity serve webp soltanto se l header Accept lo elenca esplicitamente,
+ * quindi `auto=format` restituisce comunque JPEG in tutti i casi provati:
+ * senza Accept, con un Accept permissivo, e con lo user-agent di
+ * facebookexternalhit. La motivazione originaria — che l anteprima sarebbe
+ * arrivata in un formato non renderizzabile — non e quindi dimostrata.
+ *
+ * `fm=jpg` resta perche toglie del tutto la dipendenza dal comportamento di
+ * negoziazione del CDN, che puo cambiare senza preavviso, ed e cio che la
+ * documentazione Sanity raccomanda per le URL destinate ai crawler. E una
+ * garanzia di determinismo, non la correzione di un guasto osservato.
+ *
  * Le dimensioni sono quelle attese da Open Graph.
  */
 export function buildSocialImageUrl(src: string): string {

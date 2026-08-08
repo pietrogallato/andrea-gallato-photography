@@ -35,9 +35,9 @@ describe('buildPageMetadata', () => {
     const m = buildPageMetadata({ ...base, locale: 'it', route: { key: 'home' }, title: 'Andrea Gallato' })
     const url = String((m.openGraph?.images as { url: string }[])[0].url)
 
-    // auto=format dipende dall header Accept, che gli scraper social non
-    // mandano in modo affidabile: l anteprima arriverebbe in un formato che
-    // non sanno rendere, o non arriverebbe affatto.
+    // Formato fissato per determinismo: toglie la dipendenza dal
+    // comportamento di negoziazione del CDN, che puo cambiare. Misurato che
+    // auto=format oggi restituirebbe comunque JPEG agli scraper.
     expect(url).toContain('fm=jpg')
     expect(url).not.toContain('auto=format')
   })
