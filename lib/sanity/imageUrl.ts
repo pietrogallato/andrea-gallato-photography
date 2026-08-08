@@ -39,3 +39,21 @@ export function buildImageUrl(src: string, width: number, options: ImageUrlOptio
 
   return url.toString()
 }
+
+/**
+ * URL per gli scraper social.
+ *
+ * Il formato e fissato invece che negoziato: `auto=format` dipende dall header
+ * Accept, che i crawler non mandano in modo affidabile, e l anteprima
+ * arriverebbe in un formato che non sanno rendere — o non arriverebbe affatto.
+ * Le dimensioni sono quelle attese da Open Graph.
+ */
+export function buildSocialImageUrl(src: string): string {
+  const url = new URL(src)
+  url.searchParams.set('w', '1200')
+  url.searchParams.set('h', '630')
+  url.searchParams.set('fit', 'crop')
+  url.searchParams.set('fm', 'jpg')
+  url.searchParams.set('q', '80')
+  return url.toString()
+}

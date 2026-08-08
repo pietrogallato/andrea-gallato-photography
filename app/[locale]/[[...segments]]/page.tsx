@@ -1,8 +1,13 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { LOCALES, isLocale } from '@/lib/i18n/locales'
 import { ROUTES, resolveRoute } from '@/lib/i18n/routes'
 import { sanityFetch } from '@/lib/sanity/fetch'
-import { siteSettingsQuery, projectSlugsQuery } from '@/lib/sanity/queries'
+import { siteSettingsQuery, projectSlugsQuery, projectBySlugQuery } from '@/lib/sanity/queries'
+import { pickLocalized } from '@/lib/i18n/localize'
+import { getDictionary } from '@/lib/i18n/dictionaries'
+import { buildPageMetadata } from '@/lib/seo/metadata'
+import { siteUrl } from '@/lib/siteUrl'
 import { HomeView } from '@/views/HomeView'
 import { GalleryView } from '@/views/GalleryView'
 import { AboutView } from '@/views/AboutView'
@@ -24,6 +29,64 @@ export async function generateStaticParams() {
       segments: [...ROUTES.projects[locale], slug],
     })),
   ])
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; segments?: string[] }>
+}): Promise<Metadata> {
+  const { locale, segments } = await params
+  if (!isLocale(locale)) return {}
+
+  const route = resolveRoute(locale, segments ?? [])
+  if (!route) return {}
+
+  const settings = await sanityFetch({ query: siteSettingsQuery, tags: ['settings'] })
+  const dict = getDictionary(locale)
+
+  const siteName = settings?.photographerName ?? 'Andrea Gallato'
+  const seoTitle = pickLocalized({ it: settings?.seoTitleIt, en: settings?.seoTitleEn }, locale).value
+  const seoDescription = pickLocalized(
+    { it: settings?.seoDescriptionIt, en: settings?.seoDescriptionEn },
+    locale,
+  ).value
+
+  // Il titolo dipende dalla pagina; la descrizione ricade su quella del sito
+  // quando la pagina non ne ha una propria.
+  let title = seoTitle || siteName
+  let description = seoDescription
+
+  if (route.key === 'gallery') title = `${dict.navGallery} — ${siteName}`
+  if (route.key === 'projects') title = `${dict.navProjects} — ${siteName}`
+  if (route.key === 'about') title = `${dict.navAbout} — ${siteName}`
+
+  if (route.key === 'project') {
+    const project = await sanityFetch({
+      query: projectBySlugQuery,
+      params: { slug: route.slug },
+      tags: [`project:${route.slug}`],
+    })
+
+    // Un progetto inesistente non deve produrre metadati inventati: la pagina
+    // restituira comunque 404.
+    if (!project) return {}
+
+    title = `${pickLocalized({ it: project.titleIt, en: project.titleEn }, locale).value} — ${siteName}`
+    description =
+      pickLocalized({ it: project.descriptionIt, en: project.descriptionEn }, locale).value ||
+      seoDescription
+  }
+
+  return buildPageMetadata({
+    siteUrl: siteUrl(),
+    siteName,
+    socialImageUrl: settings?.socialImageUrl,
+    locale,
+    route,
+    title,
+    description,
+  })
 }
 
 export default async function Page({
@@ -56,7 +119,6 @@ export default async function Page({
       return <AboutView locale={locale} siteName={settings?.photographerName ?? 'Andrea Gallato'} />
     }
     default:
-      // projects, project e about arrivano in Fase 2.
       notFound()
   }
 }

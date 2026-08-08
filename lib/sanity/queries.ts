@@ -5,7 +5,8 @@ export const siteSettingsQuery = defineQuery(`
     photographerName,
     seoTitleIt, seoTitleEn,
     seoDescriptionIt, seoDescriptionEn,
-    email
+    email,
+    "socialImageUrl": socialImage.asset->url
   }
 `)
 

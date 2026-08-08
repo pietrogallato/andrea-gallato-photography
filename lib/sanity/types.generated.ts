@@ -290,7 +290,7 @@ export type AllSanitySchemaTypes =
 
 // Source: lib/sanity/queries.ts
 // Variable: siteSettingsQuery
-// Query: *[_type == "siteSettings"][0]{    photographerName,    seoTitleIt, seoTitleEn,    seoDescriptionIt, seoDescriptionEn,    email  }
+// Query: *[_type == "siteSettings"][0]{    photographerName,    seoTitleIt, seoTitleEn,    seoDescriptionIt, seoDescriptionEn,    email,    "socialImageUrl": socialImage.asset->url  }
 export type SiteSettingsQueryResult = {
   photographerName: string | null;
   seoTitleIt: string | null;
@@ -298,6 +298,7 @@ export type SiteSettingsQueryResult = {
   seoDescriptionIt: string | null;
   seoDescriptionEn: string | null;
   email: string | null;
+  socialImageUrl: string | null;
 } | null;
 
 // Source: lib/sanity/queries.ts
@@ -452,7 +453,7 @@ export type SitemapQueryResult = {
 import "@sanity/client";
 declare module "@sanity/client" {
   interface SanityQueries {
-    '\n  *[_type == "siteSettings"][0]{\n    photographerName,\n    seoTitleIt, seoTitleEn,\n    seoDescriptionIt, seoDescriptionEn,\n    email\n  }\n': SiteSettingsQueryResult;
+    '\n  *[_type == "siteSettings"][0]{\n    photographerName,\n    seoTitleIt, seoTitleEn,\n    seoDescriptionIt, seoDescriptionEn,\n    email,\n    "socialImageUrl": socialImage.asset->url\n  }\n': SiteSettingsQueryResult;
     '\n  *[_type == "homePage"][0]{\n    introIt, introEn\n  }\n': HomePageQueryResult;
     '\n  *[_type == "photo" && showInGallery == true && defined(image.asset)]\n    | order(orderRank asc)[$start...$end]{\n  _id,\n  altIt, altEn,\n  titleIt, titleEn,\n  placeIt, placeEn,\n  year,\n  "url": image.asset->url,\n  "aspectRatio": image.asset->metadata.dimensions.aspectRatio,\n  "lqip": image.asset->metadata.lqip\n}\n': GalleryPageQueryResult;
     '\n  count(*[_type == "photo" && showInGallery == true && defined(image.asset)])\n': GalleryCountQueryResult;
