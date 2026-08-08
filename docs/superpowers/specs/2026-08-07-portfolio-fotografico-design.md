@@ -72,10 +72,12 @@ app/
   sitemap.ts
   robots.ts
 views/                          un modulo per pagina, invocato dalla catch-all
-  HomeView.tsx, GalleryView.tsx, ProjectsView.tsx, ProjectView.tsx, AboutView.tsx
+  HomeView.tsx, GalleryView.tsx, AboutView.tsx  (fatte)
+  ProjectsView.tsx, ProjectView.tsx             (Fase 2)
 components/
   layout/       Header, Footer, MobileMenu, SkipLink
-  controls/     ThemeToggle, LocaleSwitcher
+  controls/     ThemeToggle, LocaleSwitcher, LocaleNav
+  theme/        ThemeScript
   gallery/      PhotoGrid, PhotoRow, PhotoTile, LoadMoreButton
   lightbox/     Lightbox, LightboxCaption, useSwipe
   media/        SanityImage
@@ -83,7 +85,8 @@ components/
 lib/
   sanity/       client.ts, fetch.ts, queries.ts, imageUrl.ts, imageLoader.ts, types.generated.ts
   i18n/         routes.ts, locales.ts, dictionaries/{it,en}.ts, localize.ts
-  gallery/      packRows.ts, sizes.ts
+  gallery/      packRows.ts, sizes.ts, pageSize.ts, toGalleryPhoto.ts
+  fonts.ts      definizioni next/font
   revalidation/ tags.ts
   theme/        script.ts
 sanity/
@@ -93,7 +96,11 @@ sanity/
   tools/upload/ UploadTool.tsx, useBatchUpload.ts, dedupe.ts, uploadFile.ts, orderRank.ts
 scripts/seed/   generatePlaceholders.ts, seedDataset.ts
 styles/         tokens.css, reset.css, typography.css
-e2e/            specifiche Playwright + progetto di setup autenticazione
+app/actions/    loadMorePhotos.ts
+e2e/            specifiche Playwright. Due ambienti: i progetti browser girano
+                contro un build di produzione, il progetto `dev` contro
+                `next dev`, dove React monta due volte e lascia attivi i propri
+                avvisi. Tre difetti reali vivevano solo li
 docs/superpowers/specs/
 ```
 
@@ -552,9 +559,13 @@ Repository, toolchain e versioni pinnate, Node 24, progetto Sanity e tre dataset
 
 Verifiche obbligatorie del checkpoint, non assunzioni: `next build && next start` mostra le rotte come prerenderizzate; l'header `x-nextjs-cache` su una pagina pubblica è `HIT` e non `MISS` a ogni richiesta; il gesto touch della lightbox è pilotabile da Playwright con la strada scelta in §15.4.
 
-### Fase 2 — Progetti, About, SEO, revalidation
+### Fase 2 — Progetti, SEO, revalidation
 
-Indice e pagina di progetto, About, `generateMetadata` con canonical e hreflang, sitemap, robots, 404 localizzate, error boundary, webhook firmato con `directTagsFor` più risoluzione delle dipendenze inverse, stati di resilienza, test relativi.
+**Riallineamento dell'8 agosto 2026.** Tre voci previste qui sono già state consegnate fuori ordine: le 404 localizzate e l'error boundary in Fase 1A, la pagina **About** su richiesta diretta dopo la Fase 1B. Un titolo localizzato minimo è già in Fase 1A, perché senza di esso il sito non emetteva alcun `<title>` — WCAG 2.4.2, livello A.
+
+Resta quindi: indice e pagina di progetto, `generateMetadata` completa con canonical, `hreflang` e Open Graph, sitemap, robots, webhook firmato con `directTagsFor` più risoluzione delle dipendenze inverse, stati di resilienza, test relativi.
+
+**Prerequisiti di dataset, oggi non soddisfatti:** nessun documento `project` è seminato, quindi le pagine progetto non avrebbero contenuto da rendere; e `siteSettings.socialImage` non è valorizzata, pur essendo obbligatoria per la pubblicazione e necessaria alle anteprime social. Entrambi vanno coperti dal seed prima che i checkpoint di questa fase siano verificabili.
 
 Checkpoint: tutte le pagine pubbliche esistono in entrambe le lingue; la pubblicazione aggiorna solo le pagine coinvolte, verificato sulla preview deployment e non in locale; metadati e anteprime social corretti.
 
