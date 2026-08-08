@@ -78,6 +78,15 @@ async function main() {
     console.log(`  ${spec.filename} -> ${id}`)
   }
 
+  // socialImage e obbligatoria per la pubblicazione e alimenta le anteprime
+  // social: serve un asset dedicato, di taglio orizzontale.
+  const socialSpec = plan.find((s) => s.ratioName === '16-9') ?? plan[0]
+  const socialAsset = await client.assets.upload(
+    'image',
+    createReadStream(path.join(OUTPUT_DIR, socialSpec.filename)),
+    { filename: `social-${socialSpec.filename}` },
+  )
+
   await client.createOrReplace({
     _id: 'siteSettings',
     _type: 'siteSettings',
@@ -86,8 +95,57 @@ async function main() {
     seoTitleEn: 'Andrea Gallato — Photography',
     seoDescriptionIt: 'Fotografia di paesaggio, street e ritratto.',
     seoDescriptionEn: 'Landscape, street and portrait photography.',
+    socialImage: { _type: 'image', asset: { _type: 'reference', _ref: socialAsset._id } },
     email: 'info@example.com',
   })
+
+  const progetti = [
+    {
+      id: 'seed-project-nebbia',
+      slug: 'nebbia',
+      titleIt: 'Nebbia',
+      titleEn: 'Fog',
+      descriptionIt:
+        'Testo provvisorio, da sostituire dallo Studio. Qui va la descrizione del progetto.',
+      descriptionEn:
+        'Placeholder text, to be replaced from the Studio. This is where the project description goes.',
+      year: 2023,
+      photos: photoIds.slice(0, 7),
+      featured: true,
+    },
+    {
+      id: 'seed-project-citta',
+      slug: 'citta',
+      titleIt: 'Città',
+      titleEn: 'City',
+      descriptionIt:
+        'Testo provvisorio, da sostituire dallo Studio. Qui va la descrizione del progetto.',
+      descriptionEn: null,
+      year: 2024,
+      photos: photoIds.slice(7, 14),
+      featured: false,
+    },
+  ]
+
+  // I progetti vanno creati PRIMA della homepage: i riferimenti forti di
+  // selectedProjects devono gia risolvere, altrimenti la mutazione e rifiutata
+  // con documentReferenceDoesNotExistError.
+  for (const p of progetti) {
+    await client.createOrReplace({
+      _id: p.id,
+      _type: 'project',
+      titleIt: p.titleIt,
+      titleEn: p.titleEn,
+      descriptionIt: p.descriptionIt,
+      descriptionEn: p.descriptionEn,
+      slug: { _type: 'slug', current: p.slug },
+      year: p.year,
+      cover: { _type: 'reference', _ref: p.photos[0] },
+      photos: p.photos.map((ref, i) => ({ _type: 'reference', _ref: ref, _key: `ph-${i}` })),
+      featured: p.featured,
+    })
+    console.log(`  progetto ${p.slug} -> ${p.id}`)
+  }
 
   await client.createOrReplace({
     _id: 'homePage',
@@ -100,6 +158,9 @@ async function main() {
       _ref: ref,
       _key: `sel-${i}`,
     })),
+    selectedProjects: progetti
+      .filter((p) => p.featured)
+      .map((p, i) => ({ _type: 'reference', _ref: p.id, _key: `proj-${i}` })),
   })
 
   // Il ritratto e un campo immagine proprio, non un riferimento a una photo:
@@ -133,8 +194,6 @@ async function main() {
 
   console.log(`\nFatto. ${photoIds.length} fotografie sul dataset "${dataset}".`)
   console.log('Pagina About creata con testi PROVVISORI: vanno riscritti dallo Studio.')
-  console.log('Nota: siteSettings non ha socialImage, obbligatoria per la pubblicazione.')
-  console.log('Va caricata a mano dallo Studio prima di testare la pubblicazione.')
 }
 
 main().catch((error) => {
