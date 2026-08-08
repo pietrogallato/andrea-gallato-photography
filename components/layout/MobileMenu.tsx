@@ -61,6 +61,13 @@ export function MobileMenu({
             {dict.navGallery}
           </Link>
           <Link
+            href={pathFor(locale, { key: 'projects' })}
+            className={styles.navLink}
+            onClick={close}
+          >
+            {dict.navProjects}
+          </Link>
+          <Link
             href={pathFor(locale, { key: 'about' })}
             className={styles.navLink}
             onClick={close}
