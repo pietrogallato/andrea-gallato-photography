@@ -27,7 +27,13 @@ export function PhotoTile({
       // impostarla inline la renderebbe imbattibile da qualunque foglio di
       // stile, e la regola dell ultima riga non potrebbe piu disattivarla.
       style={{ '--ar': String(photo.ar) } as React.CSSProperties}
-      onClick={() => onOpen(index)}
+      onClick={(event) => {
+        // Safari non sposta il focus su un button quando lo si clicca: senza
+        // questa riga l elemento di origine registrato sarebbe <body>, e alla
+        // chiusura della lightbox il focus non tornerebbe alla fotografia.
+        event.currentTarget.focus()
+        onOpen(index)
+      }}
     >
       <SanityImage
         photo={{

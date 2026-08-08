@@ -12,6 +12,18 @@
   place-items: center;
 }
 
+/* Il browser nasconde i dialog chiusi con `dialog:not([open]) { display: none }`,
+   ma quella regola dello user agent ha specificita piu bassa di una classe:
+   senza questa riga il dialog resta nel flusso fra il montaggio e la chiamata
+   a showModal() nell effect. Conseguenze misurate: l autoFocus sul pulsante di
+   chiusura fa scorrere la pagina fino al dialog, useScrollLock congela quella
+   posizione sbagliata, e showModal() registra come elemento di origine del
+   focus un pulsante gia interno al dialog, quindi alla chiusura il focus
+   finisce su body invece che sulla fotografia da cui si e partiti. */
+.dialog:not([open]) {
+  display: none;
+}
+
 .dialog::backdrop {
   background: #000;
 }

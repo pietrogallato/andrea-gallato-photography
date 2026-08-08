@@ -15,13 +15,21 @@
 }
 
 @media (max-width: 767px) {
+  /* A colonna singola l asse principale diventa verticale: `flex-basis` non
+     dimensiona piu la larghezza ma l altezza, e una percentuale contro
+     un altezza indefinita collassa a zero. La larghezza va quindi data con
+     `width` sull asse trasversale, e `align-items: stretch` serve perche il
+     tile contiene solo un immagine in posizione assoluta, priva di dimensione
+     intrinseca da cui ricavare la larghezza. */
   .row {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .row > *,
   .row[data-last] > * {
     flex-grow: 0;
-    flex-basis: 100%;
+    flex-basis: auto;
+    width: 100%;
   }
 }

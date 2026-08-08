@@ -41,10 +41,16 @@ test('rende inerte il contenuto sottostante', async ({ page }) => {
 
 test('non lascia scorrere la pagina sotto e ripristina la posizione', async ({ page }) => {
   await page.goto('/it/fotografie')
-  await page.evaluate(() => window.scrollTo(0, 400))
-  const before = await page.evaluate(() => window.scrollY)
 
-  await page.locator('[data-row] button').first().click()
+  // Il tile va portato in vista PRIMA di leggere la posizione: cliccando,
+  // Playwright lo scorrerebbe comunque in vista, cambiando lo scorrimento
+  // dopo la misura. Un utente vero non provoca quel movimento.
+  const tile = page.locator('[data-row] button').nth(8)
+  await tile.scrollIntoViewIfNeeded()
+  const before = await page.evaluate(() => window.scrollY)
+  expect(before).toBeGreaterThan(0)
+
+  await tile.click()
   await expect(page.getByRole('dialog')).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog')).toBeHidden()

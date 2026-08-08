@@ -19,6 +19,19 @@
 
 @media (max-width: 767px) {
   .nav { display: none; }
+
+  /* Sotto i 768px nome, selettore lingua e interruttore tema non stanno su una
+     riga sola: senza queste regole l header sfonda il viewport di alcuni pixel
+     e la pagina scorre orizzontalmente. Misurato su iPhone 14: 5px. */
+  .header {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-3);
+  }
+
+  .controls {
+    gap: var(--space-1);
+  }
 }
 
 .link {
