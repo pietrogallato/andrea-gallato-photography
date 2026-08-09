@@ -54,6 +54,9 @@
      striscia di sfondo scoperta sopra la fotografia protagonista, che vi
      scorre sotto con un margine negativo pari a questo valore. */
   --header-height: calc(var(--target-min) + var(--space-4) * 2);
+  /* Sotto il breakpoint l header ha padding piu stretto. Serve al pannello
+     del menu, che deve iniziare esattamente dove l header finisce. */
+  --header-height-compact: calc(var(--target-min) + var(--space-3) * 2);
 
   /* Movimento lento e senza rimbalzi, come chiede la specifica 7. L uscita
      esponenziale parte decisa e si posa: e la curva che fa sembrare un

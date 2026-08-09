@@ -13,5 +13,10 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.ts'],
     globals: true,
     include: ['**/__tests__/**/*.test.{ts,tsx}'],
+    // I worktree delle attivita in background vivono in `.claude/worktrees/`,
+    // cioe dentro il repository: senza questa riga ogni copia del progetto
+    // porta con se un'altra copia dei test, e il conto triplica. Peggio: i
+    // fallimenti di un'altra copia sembrano nostri.
+    exclude: ['**/node_modules/**', '**/dist/**', '**/.next/**', '**/.claude/**'],
   },
 })

@@ -1,12 +1,11 @@
 'use client'
 
 import { useEffect, useId, useRef, useState } from 'react'
-import Link from 'next/link'
 import type { Locale } from '@/lib/i18n/locales'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
-import { pathFor } from '@/lib/i18n/routes'
 import { LocaleNav } from '@/components/controls/LocaleNav'
 import { ThemeToggle } from '@/components/controls/ThemeToggle'
+import { PrimaryNav } from './PrimaryNav'
 import styles from './MobileMenu.module.css'
 
 export function MobileMenu({
@@ -52,29 +51,13 @@ export function MobileMenu({
       </button>
 
       <div id={panelId} className={styles.panel} hidden={!open}>
-        <nav aria-label={dict.navPrimary} className={styles.nav}>
-          <Link
-            href={pathFor(locale, { key: 'gallery' })}
-            className={styles.navLink}
-            onClick={close}
-          >
-            {dict.navGallery}
-          </Link>
-          <Link
-            href={pathFor(locale, { key: 'projects' })}
-            className={styles.navLink}
-            onClick={close}
-          >
-            {dict.navProjects}
-          </Link>
-          <Link
-            href={pathFor(locale, { key: 'about' })}
-            className={styles.navLink}
-            onClick={close}
-          >
-            {dict.navAbout}
-          </Link>
-        </nav>
+        <PrimaryNav
+          locale={locale}
+          dict={dict}
+          className={styles.nav}
+          linkClassName={styles.navLink}
+          onNavigate={close}
+        />
 
         <div className={styles.controls}>
           <LocaleNav current={locale} groupLabel={dict.localeGroup} names={localeNames} />

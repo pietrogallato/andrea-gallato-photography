@@ -1,17 +1,30 @@
 .header {
   position: sticky;
   top: 0;
-  z-index: 20;
-  display: flex;
+  /* Sopra il pannello del menu (30), non sotto. Stando sotto, il pannello lo
+     copriva: il nome spariva e il pulsante di chiusura restava dipinto
+     sotto, invisibile e non cliccabile. */
+  z-index: 40;
+
+  /* Tre colonne invece di una fila schiacciata a destra: nome a sinistra,
+     navigazione al centro, lingua e tema in fondo. La colonna centrale si
+     dimensiona sul contenuto, le laterali si equivalgono, quindi le voci
+     restano centrate rispetto alla pagina e non rispetto a cio che le sta
+     intorno. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: var(--space-5);
+  gap: var(--space-4);
   padding: var(--space-4) var(--space-5);
   width: 100%;
+
   /* Il fondo e traslucido invece che pieno: la fotografia continua sotto
      l header, che resta presente senza tagliare la pagina in due. */
   background: rgb(var(--scrim) / 0.72);
   backdrop-filter: saturate(140%) blur(14px);
   -webkit-backdrop-filter: saturate(140%) blur(14px);
+  /* Un filo, non un bordo: separa senza disegnare una barra. */
+  border-bottom: 1px solid color-mix(in oklab, var(--fg) 9%, transparent);
 }
 
 @supports not (backdrop-filter: blur(1px)) {
@@ -20,22 +33,25 @@
   }
 }
 
-.inner {
-  display: contents;
-}
-
 .name {
   font-family: var(--font-display);
   font-size: 1.25rem;
   letter-spacing: var(--tracking-display);
   text-decoration: none;
-  margin-right: auto;
   white-space: nowrap;
+  justify-self: start;
+  /* Sopra il pannello del menu, che nel DOM e un discendente dell header e
+     quindi coprirebbe i suoi fratelli. Alzare lo z-index dell header non
+     basterebbe: il confronto avviene fra elementi dello stesso contesto di
+     impilamento, ed e l header stesso a crearlo. */
+  position: relative;
+  z-index: 31;
 }
 
 .nav {
   display: flex;
   gap: var(--space-4);
+  justify-self: center;
 }
 
 .link {
@@ -70,6 +86,16 @@
   transform: scaleX(1);
 }
 
+/* La pagina in cui ci si trova resta segnata anche senza passarci sopra: era
+   l unica cosa che l header non diceva. */
+.link[aria-current='page'] {
+  color: var(--fg);
+}
+
+.link[aria-current='page']::before {
+  transform: scaleX(1);
+}
+
 .link::after {
   content: '';
   position: absolute;
@@ -85,6 +111,16 @@
   display: flex;
   align-items: center;
   gap: var(--space-4);
+  justify-self: end;
+}
+
+/* Un filo verticale divide la navigazione dagli strumenti: sono due cose
+   diverse, e prima erano un blocco unico indistinto. */
+.controls::before {
+  content: '';
+  inline-size: 1px;
+  block-size: 1.15em;
+  background: color-mix(in oklab, var(--fg) 20%, transparent);
 }
 
 .menu {
@@ -93,6 +129,8 @@
 
 @media (max-width: 767px) {
   .header {
+    /* Due sole colonne: il nome e il pulsante del menu. */
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: var(--space-3);
     padding: var(--space-3) var(--space-4);
   }
@@ -104,5 +142,6 @@
 
   .menu {
     display: block;
+    justify-self: end;
   }
 }

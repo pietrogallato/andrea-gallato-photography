@@ -150,3 +150,56 @@ test('gli href del selettore puntano alla pagina corrente gia nell HTML, senza J
   await expect(page.getByRole('link', { name: 'English' })).toHaveAttribute('href', '/en/about')
   await context.close()
 })
+
+/**
+ * Regressione riportata dall utente: a menu aperto la schermata era
+ * disordinata e non si capiva come uscirne.
+ *
+ * La causa: il pannello aveva `z-index: 30` e l header `20`, quindi il
+ * pannello copriva l header. Il nome del sito spariva e il pulsante di
+ * chiusura restava dipinto sotto, invisibile e non cliccabile.
+ */
+test('a menu aperto restano visibili il nome del sito e la chiusura', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'il menu a pannello esiste solo sotto il breakpoint')
+
+  await page.goto('/it/fotografie')
+  await page.getByRole('button', { name: 'Apri il menu' }).click()
+
+  await expect(page.getByRole('link', { name: 'Andrea Gallato' })).toBeVisible()
+
+  const chiudi = page.getByRole('button', { name: 'Chiudi il menu' })
+  await expect(chiudi).toBeVisible()
+
+  // `click` fallisce se l elemento e coperto da un altro: e esattamente il
+  // difetto, e nessuna asserzione sulla sola visibilita lo avrebbe colto.
+  await chiudi.click({ timeout: 5_000 })
+  await expect(page.getByRole('button', { name: 'Apri il menu' })).toBeVisible()
+})
+
+test('il menu aperto parte sotto l header, senza il vuoto di prima', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'il menu a pannello esiste solo sotto il breakpoint')
+
+  await page.goto('/it/fotografie')
+  const header = await page.locator('header').boundingBox()
+  await page.getByRole('button', { name: 'Apri il menu' }).click()
+
+  // Il pannello si raggiunge dall attributo che il trigger gia dichiara,
+  // invece di indovinarne l id generato o la classe con l hash del modulo.
+  const panelId = await page
+    .getByRole('button', { name: 'Chiudi il menu' })
+    .getAttribute('aria-controls')
+  const prima = await page.locator(`[id="${panelId}"] nav a`).first().boundingBox()
+
+  // La prima voce inizia poco sotto l header: prima il pannello centrava il
+  // contenuto e lasciava un vuoto sopra e uno sotto.
+  expect(prima!.y).toBeGreaterThan(header!.y + header!.height)
+  expect(prima!.y).toBeLessThan(header!.y + header!.height + 120)
+})
+
+test('la voce della pagina corrente e segnata', async ({ page, isMobile }) => {
+  await page.goto('/it/fotografie')
+  if (isMobile) await page.getByRole('button', { name: 'Apri il menu' }).click()
+
+  await expect(page.getByRole('link', { name: 'Fotografie' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('link', { name: 'Progetti' })).not.toHaveAttribute('aria-current', 'page')
+})

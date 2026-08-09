@@ -5,6 +5,7 @@ import { pathFor } from '@/lib/i18n/routes'
 import { ThemeToggle } from '@/components/controls/ThemeToggle'
 import { LocaleNav } from '@/components/controls/LocaleNav'
 import { MobileMenu } from './MobileMenu'
+import { PrimaryNav } from './PrimaryNav'
 import styles from './Header.module.css'
 
 export function Header({ locale, siteName }: { locale: Locale; siteName: string }) {
@@ -17,17 +18,12 @@ export function Header({ locale, siteName }: { locale: Locale; siteName: string 
         {siteName}
       </Link>
 
-      <nav aria-label={dict.navPrimary} className={styles.nav}>
-        <Link href={pathFor(locale, { key: 'gallery' })} className={`${styles.link} label`}>
-          {dict.navGallery}
-        </Link>
-        <Link href={pathFor(locale, { key: 'projects' })} className={`${styles.link} label`}>
-          {dict.navProjects}
-        </Link>
-        <Link href={pathFor(locale, { key: 'about' })} className={`${styles.link} label`}>
-          {dict.navAbout}
-        </Link>
-      </nav>
+      <PrimaryNav
+        locale={locale}
+        dict={dict}
+        className={styles.nav}
+        linkClassName={`${styles.link} label`}
+      />
 
       <div className={styles.controls}>
         <LocaleNav current={locale} groupLabel={dict.localeGroup} names={localeNames} />

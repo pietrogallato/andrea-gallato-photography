@@ -5,6 +5,10 @@
 
 .trigger {
   position: relative;
+  /* Sopra il pannello, che e il suo fratello nel DOM. Senza questa riga il
+     pulsante resta dipinto sotto: visibile agli strumenti, invisibile e non
+     cliccabile per chi guarda. Era il difetto principale del menu aperto. */
+  z-index: 31;
   min-width: var(--target-min);
   min-height: var(--target-min);
   padding: var(--space-2);
@@ -19,17 +23,29 @@
 
 /* Pannello a schermo intero invece che a tendina: su un sito di fotografie il
    menu e uno dei rari momenti senza immagini, e vale la pena che sia una
-   pagina intera silenziosa invece di un riquadro appiccicato all angolo. */
+   pagina intera silenziosa invece di un riquadro appiccicato all angolo.
+
+   `z-index` sotto quello dell header di proposito: cosi il nome del sito e il
+   pulsante di chiusura restano visibili sopra il pannello, e il menu aperto
+   non e piu una schermata anonima da cui non si sa come uscire. */
 .panel {
   position: fixed;
   inset: 0;
   z-index: 30;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: var(--space-6);
-  padding: var(--space-7) var(--space-5);
+  /* Il contenuto parte in alto, subito sotto l header. Con
+     `justify-content: center` restava un vuoto di centocinquanta pixel sopra
+     le voci e altrettanto sotto, ed era la ragione principale del disordine. */
+  justify-content: flex-start;
+  gap: var(--space-5);
+  /* Stesso margine laterale dell header: il nome del sito e le voci del menu
+     cadono sulla stessa linea verticale. */
+  padding: calc(var(--header-height-compact) + var(--space-5)) var(--space-4)
+    max(var(--space-5), env(safe-area-inset-bottom));
   background: var(--bg);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   animation: fade var(--duration-fast) var(--ease-out) both;
 }
 
@@ -40,17 +56,48 @@
 .nav {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
 }
 
 .navLink {
+  display: block;
   font-family: var(--font-display);
-  font-size: clamp(2.25rem, 1.5rem + 6vw, 3.5rem);
+  /* Piu contenuto di prima: a 390px il vecchio clamp arrivava a quasi 48px e
+     le tre voci occupavano mezzo schermo. */
+  font-size: clamp(1.75rem, 1.1rem + 4.5vw, 2.5rem);
   letter-spacing: var(--tracking-display);
-  line-height: 1;
+  line-height: 1.1;
   text-decoration: none;
+  padding: var(--space-3) 0;
+  /* Un filo fra una voce e l altra: da ritmo all elenco, che prima era un
+     blocco di parole grandi senza struttura. */
+  border-bottom: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
+  transition: color var(--duration-fast) var(--ease);
+}
+
+.navLink:first-child {
+  border-top: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
+}
+
+.navLink[aria-current='page'] {
+  color: var(--fg);
+}
+
+/* Le voci entrano una dopo l altra. `--i` non e impostato da nessuna parte in
+   JavaScript: il ritardo si scala con nth-child, cosi il markup resta pulito. */
+.navLink {
   animation: reveal var(--duration-slow) var(--ease-out) both;
-  animation-delay: 60ms;
+}
+
+.navLink:nth-child(1) {
+  animation-delay: 40ms;
+}
+
+.navLink:nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.navLink:nth-child(3) {
+  animation-delay: 140ms;
 }
 
 .controls {
@@ -58,8 +105,10 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
+  /* Spinti in fondo al pannello invece che appesi sotto le voci. */
+  margin-top: auto;
   padding-top: var(--space-5);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
   animation: reveal var(--duration-slow) var(--ease-out) both;
-  animation-delay: 140ms;
+  animation-delay: 190ms;
 }
