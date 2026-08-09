@@ -16,15 +16,7 @@
  *
  * `year` viene dai metadati EXIF dei file, non da una stima.
  */
-export type PhotoSpec = {
-  /** Nome del file dentro SOURCE_DIR. */
-  filename: string
-  /** Titolo dell'autore. Assente dove il nome del file è un nome di lavoro. */
-  titleEn?: string
-  altIt: string
-  altEn: string
-  year: number
-}
+import type { PhotoSpec } from './photoDoc'
 
 export const ANDREA_PHOTOS: PhotoSpec[] = [
   {
