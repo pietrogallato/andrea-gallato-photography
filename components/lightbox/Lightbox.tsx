@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Locale } from '@/lib/i18n/locales'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
 import type { GalleryPhoto } from '@/components/gallery/types'
@@ -8,6 +8,15 @@ import { SanityImage } from '@/components/media/SanityImage'
 import { LightboxCaption } from './LightboxCaption'
 import { useScrollLock } from './useScrollLock'
 import styles from './Lightbox.module.css'
+
+/**
+ * Quanto si aspetta prima di dichiarare l'attesa.
+ *
+ * Una fotografia gia in cache arriva in pochi millisecondi: mostrare subito un
+ * indicatore lo farebbe lampeggiare a ogni freccia. Sopra questa soglia,
+ * invece, senza un segnale sembrerebbe che il tasto non abbia funzionato.
+ */
+const INDICATOR_DELAY_MS = 300
 
 export function Lightbox({
   photos,
@@ -27,7 +36,20 @@ export function Lightbox({
   const ref = useRef<HTMLDialogElement>(null)
   const photo = photos[index]
 
+  const [loaded, setLoaded] = useState(false)
+  const [waitedEnough, setWaitedEnough] = useState(false)
+
   useScrollLock()
+
+  // Ogni cambio di fotografia riapre l'attesa. L'indicatore non compare
+  // subito: sotto la soglia il caricamento e gia finito, e farlo lampeggiare
+  // a ogni freccia sarebbe piu fastidioso del problema che risolve.
+  useEffect(() => {
+    setLoaded(false)
+    setWaitedEnough(false)
+    const timer = setTimeout(() => setWaitedEnough(true), INDICATOR_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [photo.id])
 
   useEffect(() => {
     const dialog = ref.current
@@ -77,12 +99,23 @@ export function Lightbox({
         </svg>
       </button>
 
-      <figure className={styles.figure}>
+      {!loaded && waitedEnough ? (
+        <div
+          className={styles.loader}
+          role="progressbar"
+          aria-label={dict.lightboxLoading}
+          // Nessun aria-valuenow: non sappiamo a che punto sia il
+          // trasferimento, e dichiarare un valore falso e peggio che tacere.
+        />
+      ) : null}
+
+      <figure className={styles.figure} aria-busy={!loaded}>
         <SanityImage
           photo={{ url: photo.url, aspectRatio: photo.ar, lqip: photo.lqip, alt: photo.alt, altLang: photo.altLang }}
           sizes="100vw"
           locale={locale}
           className={styles.image}
+          onLoad={() => setLoaded(true)}
         />
         <LightboxCaption photo={photo} locale={locale} />
       </figure>

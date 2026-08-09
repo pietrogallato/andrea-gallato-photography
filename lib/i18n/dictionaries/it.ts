@@ -26,6 +26,7 @@ export const it = {
   aboutContactHeading: 'Contatti',
   portraitOf: 'Ritratto di',
   lightboxNext: 'Fotografia successiva',
+  lightboxLoading: 'Caricamento della fotografia',
 } as const
 
 export type Dictionary = Record<keyof typeof it, string>

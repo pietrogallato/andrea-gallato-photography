@@ -20,14 +20,22 @@ export function SanityImage({
   locale,
   priority = false,
   className,
+  onLoad,
 }: {
   photo: PhotoImage
   sizes: string
   locale: Locale
   priority?: boolean
   className?: string
+  /** Scatta quando i pixel sono arrivati. Serve a chi mostra un'attesa. */
+  onLoad?: () => void
 }) {
-  const [failed, setFailed] = useState(false)
+  // L'URL che ha fallito, non un booleano: cosi cambiare fotografia azzera lo
+  // stato da solo. Con un booleano, una fotografia rotta lasciava il ripiego
+  // acceso anche su tutte le successive, perche lo stato sopravvive al
+  // cambio di prop.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+  const failed = failedUrl === photo.url
 
   const style = { '--ar': String(photo.aspectRatio) } as React.CSSProperties
   const lang = photo.altLang === locale ? undefined : photo.altLang
@@ -45,6 +53,13 @@ export function SanityImage({
   return (
     <div className={`${styles.wrapper} ${className ?? ''}`} style={style}>
       <Image
+        // La `key` rimonta l'elemento quando cambia la fotografia. Senza,
+        // React riusa lo stesso <img> cambiandogli `src`, e il browser
+        // continua a dipingere la fotografia precedente finche la nuova non e
+        // decodificata: nella lightbox si vedeva lo scatto di prima al posto
+        // di un'attesa. Rimontando, il segnaposto sfocato torna subito in
+        // scena.
+        key={photo.url}
         loader={sanityImageLoader}
         src={photo.url}
         alt={photo.alt}
@@ -54,7 +69,8 @@ export function SanityImage({
         priority={priority}
         placeholder={photo.lqip ? 'blur' : 'empty'}
         blurDataURL={photo.lqip ?? undefined}
-        onError={() => setFailed(true)}
+        onLoad={onLoad}
+        onError={() => setFailedUrl(photo.url)}
         className={styles.image}
       />
     </div>

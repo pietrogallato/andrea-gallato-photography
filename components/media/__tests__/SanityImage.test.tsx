@@ -50,4 +50,41 @@ describe('SanityImage', () => {
     const wrapper = container.firstElementChild as HTMLElement
     expect(wrapper.style.getPropertyValue('--ar')).toBe(String(4 / 3))
   })
+
+  /**
+   * Lo stato di errore vive nel componente, ma la fotografia arriva dalle
+   * prop: nella lightbox lo stesso componente ne mostra molte, una dopo
+   * l altra. Tenendo un booleano, una fotografia rotta lasciava acceso il
+   * ripiego anche su tutte le successive, che erano sane.
+   */
+  it('torna a mostrare l immagine quando cambia fotografia dopo un errore', () => {
+    const altra = { ...photo, url: 'https://cdn.sanity.io/images/p/d/b-1500x2000.jpg', alt: 'Altra' }
+
+    const { rerender } = render(<SanityImage photo={photo} sizes="50vw" locale="it" />)
+    fireEvent.error(screen.getByRole('img'))
+    expect(screen.queryByRole('img')).toBeNull()
+
+    rerender(<SanityImage photo={altra} sizes="50vw" locale="it" />)
+
+    expect(screen.getByRole('img')).toBeInTheDocument()
+    expect(screen.queryByText('Nebbia sul fiume')).toBeNull()
+  })
+
+  /**
+   * Il difetto originale: React riusava lo stesso <img> cambiandogli `src`, e
+   * il browser continuava a dipingere la fotografia precedente finche la
+   * nuova non era decodificata. jsdom non dipinge, quindi qui si verifica il
+   * rimedio — il nodo viene sostituito — non il sintomo.
+   */
+  it('rimonta l elemento invece di riscrivere src quando cambia fotografia', () => {
+    const altra = { ...photo, url: 'https://cdn.sanity.io/images/p/d/b-1500x2000.jpg', alt: 'Altra' }
+
+    const { rerender } = render(<SanityImage photo={photo} sizes="50vw" locale="it" />)
+    const primo = screen.getByRole('img')
+
+    rerender(<SanityImage photo={altra} sizes="50vw" locale="it" />)
+
+    expect(screen.getByRole('img')).not.toBe(primo)
+    expect(primo).not.toBeInTheDocument()
+  })
 })

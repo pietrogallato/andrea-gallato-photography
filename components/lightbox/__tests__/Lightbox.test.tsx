@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Lightbox } from '../Lightbox'
 import { getDictionary } from '@/lib/i18n/dictionaries'
@@ -96,5 +96,138 @@ describe('Lightbox', () => {
   it('applica la superficie scura indipendentemente dal tema del sito', () => {
     setup(0)
     expect(screen.getByRole('dialog').className).toMatch(/surface-dark/)
+  })
+})
+
+/**
+ * Il difetto vero — il browser continua a dipingere la fotografia precedente
+ * finche la nuova non e decodificata — **non e riproducibile qui**: jsdom non
+ * dipinge nulla, e nel DOM `src` e `alt` cambiano subito anche col bug.
+ *
+ * Quello che si puo verificare e il meccanismo che lo risolve: l elemento
+ * immagine viene rimontato invece di riusato, cosi il segnaposto sfocato
+ * torna a mostrarsi, e c e uno stato di caricamento visibile quando la
+ * fotografia tarda.
+ */
+describe('Lightbox, stato di caricamento', () => {
+  function renderAt(index: number) {
+    return render(
+      <Lightbox
+        photos={photos}
+        index={index}
+        locale="it"
+        dict={dict}
+        onClose={vi.fn()}
+        onNavigate={vi.fn()}
+      />,
+    )
+  }
+
+  it('rimonta l elemento immagine quando la fotografia cambia', () => {
+    const { rerender } = renderAt(0)
+    const prima = screen.getByAltText('Prima')
+
+    rerender(
+      <Lightbox
+        photos={photos}
+        index={1}
+        locale="it"
+        dict={dict}
+        onClose={vi.fn()}
+        onNavigate={vi.fn()}
+      />,
+    )
+
+    const seconda = screen.getByAltText('Seconda')
+    // Nodo diverso, non lo stesso <img> con un src riscritto: e cio che
+    // riporta in scena il segnaposto invece della fotografia precedente.
+    expect(seconda).not.toBe(prima)
+    expect(prima).not.toBeInTheDocument()
+  })
+
+  it('non mostra l indicatore prima della soglia: una fotografia veloce non lo fa lampeggiare', () => {
+    vi.useFakeTimers()
+    try {
+      renderAt(0)
+      act(() => { vi.advanceTimersByTime(200) })
+      expect(screen.queryByRole('progressbar')).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('mostra l indicatore quando la fotografia tarda', () => {
+    vi.useFakeTimers()
+    try {
+      renderAt(0)
+      act(() => { vi.advanceTimersByTime(400) })
+      const barra = screen.getByRole('progressbar')
+      expect(barra).toHaveAccessibleName(dict.lightboxLoading)
+      // Indeterminato: nessun valore da dichiarare.
+      expect(barra).not.toHaveAttribute('aria-valuenow')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  /**
+   * `next/image` non inoltra `onLoad` in modo sincrono: attende `decode()`
+   * sull elemento prima di richiamarlo. Senza aspettare quel microtask le
+   * asserzioni girerebbero un istante troppo presto, e il test fallirebbe
+   * descrivendo un difetto che non c e.
+   */
+  const segnalaCaricata = async (alt: string) => {
+    await act(async () => {
+      fireEvent.load(screen.getByAltText(alt))
+    })
+  }
+
+  it('toglie l indicatore quando la fotografia e arrivata', async () => {
+    vi.useFakeTimers()
+    try {
+      renderAt(0)
+      act(() => { vi.advanceTimersByTime(400) })
+      expect(screen.getByRole('progressbar')).toBeInTheDocument()
+
+      await segnalaCaricata('Prima')
+      expect(screen.queryByRole('progressbar')).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('marca la figura come occupata finche la fotografia non e arrivata', async () => {
+    renderAt(0)
+    const figura = screen.getByAltText('Prima').closest('figure')!
+    expect(figura).toHaveAttribute('aria-busy', 'true')
+
+    await segnalaCaricata('Prima')
+    expect(figura).toHaveAttribute('aria-busy', 'false')
+  })
+
+  it('ricomincia ad attendere quando si naviga a una fotografia gia caricata', async () => {
+    vi.useFakeTimers()
+    try {
+      const { rerender } = renderAt(0)
+      await segnalaCaricata('Prima')
+
+      rerender(
+        <Lightbox
+          photos={photos}
+          index={1}
+          locale="it"
+          dict={dict}
+          onClose={vi.fn()}
+          onNavigate={vi.fn()}
+        />,
+      )
+
+      // Lo stato non deve restare "caricata" dalla fotografia precedente.
+      expect(screen.getByAltText('Seconda').closest('figure')).toHaveAttribute('aria-busy', 'true')
+      act(() => { vi.advanceTimersByTime(400) })
+      expect(screen.getByRole('progressbar')).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

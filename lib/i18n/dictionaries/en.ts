@@ -28,4 +28,5 @@ export const en: Dictionary = {
   aboutContactHeading: 'Contact',
   portraitOf: 'Portrait of',
   lightboxNext: 'Next photograph',
+  lightboxLoading: 'Loading the photograph',
 }

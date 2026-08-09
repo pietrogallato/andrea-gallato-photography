@@ -90,3 +90,80 @@ test('Carica altre aggiunge fotografie senza spostare quelle gia visibili', asyn
   // l ultima riga gia resa (design 7.1).
   expect(boxesAfter.slice(0, before)).toEqual(boxesBefore)
 })
+
+/**
+ * Regressione riportata dall utente: navigando nella lightbox, se la
+ * fotografia nuova tardava, restava a schermo quella precedente invece di un
+ * segnale di attesa.
+ *
+ * La causa non era nostra logica ma il browser: React riusava lo stesso <img>
+ * cambiandogli `src`, e un <img> continua a dipingere i pixel vecchi finche i
+ * nuovi non sono decodificati. Per questo il test vive qui e non fra gli unit
+ * test: in jsdom non si dipinge nulla e il difetto sparisce.
+ */
+test('cambiando fotografia l elemento immagine viene sostituito, non riscritto', async ({ page }) => {
+  await page.goto('/it/fotografie')
+  await page.locator('[data-row] button').first().click()
+
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+
+  const primaImmagine = await dialog.locator('img').elementHandle()
+  await dialog.getByRole('button', { name: 'Fotografia successiva' }).click()
+
+  // L elemento che portava la fotografia precedente esce dal documento: e la
+  // prova che quei pixel non possono piu restare a schermo. Col difetto
+  // restava lo stesso nodo col solo `src` riscritto, e questa asserzione
+  // falliva — indipendentemente dalla velocita della rete, quindi vale su
+  // ogni dispositivo.
+  await expect
+    .poll(() => primaImmagine!.evaluate((el) => el.isConnected), { timeout: 5_000 })
+    .toBe(false)
+})
+
+test('quando la fotografia tarda, l attesa e dichiarata', async ({ page, isMobile }) => {
+  // **Misurato il 9 agosto 2026:** con il layout a colonna singola il tile ha
+  // gia la larghezza del viewport, quindi la lightbox riusa lo stesso
+  // candidato di srcset e la navigazione fa ZERO richieste al CDN (contro 1
+  // su desktop). Non c e nulla da attendere, e nulla da intercettare: il
+  // rallentamento non avrebbe presa e l indicatore giustamente non compare.
+  test.skip(!!isMobile, 'a colonna singola la fotografia e gia in cache dal tile')
+
+  await page.goto('/it/fotografie')
+  await page.locator('[data-row] button').first().click()
+
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+
+  // Il rallentamento si installa solo ora: applicato prima renderebbe lento
+  // anche il caricamento della galleria, senza aggiungere nulla.
+  await page.route('**cdn.sanity.io**', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    await route.continue()
+  })
+
+  await dialog.getByRole('button', { name: 'Fotografia successiva' }).click()
+
+  // Al posto della fotografia precedente c e un segnale di attesa, non il vuoto.
+  await expect(dialog.getByRole('progressbar')).toBeVisible()
+
+  // Quando la fotografia arriva, l attesa si toglie di mezzo.
+  await expect(dialog.getByRole('progressbar')).toBeHidden({ timeout: 10_000 })
+})
+
+test('una fotografia gia in cache non fa lampeggiare l attesa', async ({ page }) => {
+  await page.goto('/it/fotografie')
+  await page.locator('[data-row] button').first().click()
+
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+
+  // Avanti e indietro: la prima fotografia e gia stata scaricata.
+  await dialog.getByRole('button', { name: 'Fotografia successiva' }).click()
+  await expect(dialog.getByRole('progressbar')).toBeHidden({ timeout: 10_000 })
+  await dialog.getByRole('button', { name: 'Fotografia precedente' }).click()
+
+  // Sotto la soglia l indicatore non deve comparire affatto.
+  await page.waitForTimeout(250)
+  await expect(dialog.getByRole('progressbar')).toBeHidden()
+})
