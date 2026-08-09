@@ -6,7 +6,15 @@ import { createClient } from '@sanity/client'
 import sharp from 'sharp'
 import { ANDREA_PHOTOS, type PhotoSpec } from './andreaPhotos'
 import { slugForFilename } from './slug'
+import { ensureSingletons } from './singletons'
 import { nextOrderRank } from '../../sanity/lib/orderRank'
+
+/**
+ * La fotografia di apertura, e la stessa che si vede condividendo il link.
+ * Orizzontale di proposito: la fascia della home e larga, e l'anteprima
+ * social vuole 1200x630.
+ */
+const HERO_FILENAME = 'DSC_0098-4.jpg'
 
 /**
  * Carica le fotografie di Andrea come documenti `photo` indipendenti.
@@ -147,19 +155,28 @@ async function main() {
   const hidden = await hidePlaceholders()
   if (hidden > 0) console.log(`\nTolti dalla galleria ${hidden} placeholder del seed.`)
 
-  // L'immagine di apertura era un placeholder: con venti fotografie vere in
-  // galleria, lasciarcelo sarebbe la prima cosa che si vede. Si cambia dallo
-  // Studio in un clic, Homepage -> Fotografia di apertura.
-  const heroId = `photo-${slugForFilename('DSC_0098-4.jpg')}`
+  const heroId = `photo-${slugForFilename(HERO_FILENAME)}`
+
+  // L'asset e gia nel dataset: `socialImage` puo puntarci senza ricaricarlo.
+  const socialAssetId = await client.fetch<string | null>(
+    `*[_id == $id][0].image.asset._ref`,
+    { id: heroId },
+  )
+  if (!socialAssetId) throw new Error(`Asset non trovato per ${heroId}`)
+
+  const created = await ensureSingletons(client, { heroPhotoId: heroId, socialAssetId })
+  if (created.length > 0) console.log(`Pagine create: ${created.join(', ')}.`)
+
+  // `setIfMissing`, non `set`: se Andrea ha gia scelto la fotografia di
+  // apertura dallo Studio, rieseguire lo script non deve disfare la sua scelta.
   const homePage = await client.fetch<{ _id: string } | null>(
     `*[_type == "homePage"][0]{_id}`,
   )
   if (homePage) {
     await client
       .patch(homePage._id)
-      .set({ heroPhoto: { _type: 'reference', _ref: heroId } })
+      .setIfMissing({ heroPhoto: { _type: 'reference', _ref: heroId } })
       .commit()
-    console.log(`Fotografia di apertura impostata su ${heroId}.`)
   }
 
   console.log(`\nFatto. ${ids.length} fotografie sul dataset "${dataset}".`)
