@@ -15,7 +15,8 @@
     "e2e": "playwright test",
     "sanity:extract": "sanity schema extract --path=./schema.json --force",
     "sanity:typegen": "npm run sanity:extract && sanity typegen generate",
-    "seed": "tsx scripts/seed/seedDataset.ts"
+    "seed": "tsx scripts/seed/seedDataset.ts",
+    "upload:photos": "dotenv -e .env.local -- tsx scripts/upload/uploadPhotos.ts"
   },
   "dependencies": {
     "@sanity/client": "^7.26.2",
