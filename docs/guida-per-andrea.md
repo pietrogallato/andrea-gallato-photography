@@ -41,6 +41,8 @@ Nell'elenco Fotografie puoi trascinare per riordinare. Quell'ordine è quello ch
 
 ## Creare un progetto
 
+**Al momento non c'è nessun progetto**, e la pagina Progetti lo dice con garbo invece di restare bianca. I due che c'erano prima — «Nebbia» e «Città» — erano esempi costruiti su immagini finte, e non sono passati al sito vero. Adesso hai venti fotografie da cui partire per farne uno tuo.
+
 Progetti → nuovo documento.
 
 Servono: **titolo italiano**, **descrizione italiana**, uno **slug** (l'indirizzo della pagina, per esempio `nebbia`), una **fotografia di copertina** e **almeno una fotografia** nella sequenza.
@@ -72,6 +74,13 @@ Se ti serve toglierne una, l'ordine è questo:
 **Homepage** — la fotografia protagonista, quella grande che si vede entrando, più un testo introduttivo breve.
 
 **About** — il tuo ritratto, la biografia, lo statement, l'email e i collegamenti social. **I testi che ci sono adesso sono provvisori e vanno riscritti**: sono segnaposto, dicono esplicitamente di essere da sostituire.
+
+Due caselle sono vuote di proposito e lo Studio te le segnalerà in rosso:
+
+- **il ritratto**, perché fra le fotografie caricate non ce n'è una tua, e usarne una di strada avrebbe reso falsa la descrizione «Ritratto di Andrea Gallato» che il sito genera da solo;
+- **l'email**, che al momento è `info@example.com`. È un indirizzo finto e riservato apposta ai segnaposto: non arriva a nessuno. Va messo il tuo prima di dare in giro il link.
+
+Finché non le riempi la pagina funziona lo stesso — mostra i testi senza il ritratto — ma non potrai pubblicare altre modifiche all'About.
 
 **Impostazioni** — il tuo nome, i testi che compaiono nei risultati di ricerca, e l'immagine che si vede quando qualcuno condivide il link del sito su WhatsApp o sui social.
 
