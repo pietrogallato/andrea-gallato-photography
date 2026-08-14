@@ -10,3 +10,6 @@ test-results/
 scripts/seed/generated/
 .idea/
 .DS_Store
+
+# Mockup della sessione di brainstorming visuale.
+.superpowers/
