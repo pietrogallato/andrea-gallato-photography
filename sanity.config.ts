@@ -3,6 +3,7 @@ import { structureTool } from 'sanity/structure'
 import { visionTool } from '@sanity/vision'
 import { schemaTypes } from './sanity/schemas'
 import { deskStructure, SINGLETON_TYPES } from './sanity/structure/deskStructure'
+import { uploadToolPlugin } from './sanity/tools/upload'
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET!
@@ -27,6 +28,7 @@ export default defineConfig({
   },
   plugins: [
     structureTool({ structure: deskStructure }),
+    uploadToolPlugin(),
     ...(process.env.NODE_ENV === 'development' ? [visionTool()] : []),
   ],
 })
