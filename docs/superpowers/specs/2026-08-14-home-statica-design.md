@@ -92,6 +92,17 @@ Il footer esce dal layout ed entra nei tre punti che oggi contano su di lui:
 | `app/[locale]/[[...segments]]/page.tsx` | Rende il footer per ogni rotta **tranne** `home` |
 | `app/[locale]/preview/[[...segments]]/page.tsx` | Stessa regola: l'anteprima mostra la pagina com'è |
 | `app/[locale]/not-found.tsx` | Rende sempre il footer |
+| `app/[locale]/error.tsx` | **Resta senza footer**, per scelta — vedi sotto |
+
+**La pagina d'errore resta senza footer.** Finché il footer stava nel layout, lo riceveva
+gratis: era fratello di `<main>`, quindi compariva anche quando l'error boundary sostituiva
+il contenuto. Ora non più.
+
+Non è una svista, è una decisione. `error.tsx` è un componente **client** — Next lo
+pretende — e quindi non può leggere le impostazioni da Sanity: per mostrare il copyright
+dovrebbe avere il nome del fotografo scritto nel codice, duplicando un valore che vive nello
+Studio e che invecchierebbe in silenzio. E una pagina d'errore ha un compito solo, dire cosa
+è successo e offrire di riprovare: una riga di copyright non aiuta nessuno.
 
 **Alternative scartate.** Nasconderlo con `body:has([data-home]) footer { display: none }`
 costa una riga e funziona, ma chi legge il layout non capisce perché a volte il footer non
