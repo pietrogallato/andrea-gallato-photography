@@ -17,7 +17,9 @@
     "sanity:typegen": "npm run sanity:extract && sanity typegen generate",
     "seed": "tsx scripts/seed/seedDataset.ts",
     "upload:photos": "dotenv -e .env.local -- tsx scripts/upload/uploadPhotos.ts",
-    "upload:project": "dotenv -e .env.local -- tsx scripts/upload/uploadProject.ts"
+    "upload:project": "dotenv -e .env.local -- tsx scripts/upload/uploadProject.ts",
+    "scala:crea": "dotenv -e .env.local -- tsx scripts/scala/popolaScala.ts crea",
+    "scala:rimuovi": "dotenv -e .env.local -- tsx scripts/scala/popolaScala.ts rimuovi"
   },
   "dependencies": {
     "@sanity/client": "^7.26.2",
