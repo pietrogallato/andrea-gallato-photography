@@ -29,17 +29,17 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: /\.dev\.spec\.ts$/,
+      testIgnore: /\.dev\.spec\.ts$|studio\.(spec|setup)\.ts$/,
       use: { ...devices['Desktop Chrome'], baseURL: 'http://localhost:3000' },
     },
     {
       name: 'webkit',
-      testIgnore: /\.dev\.spec\.ts$/,
+      testIgnore: /\.dev\.spec\.ts$|studio\.(spec|setup)\.ts$/,
       use: { ...devices['Desktop Safari'], baseURL: 'http://localhost:3000' },
     },
     {
       name: 'iphone',
-      testIgnore: /\.dev\.spec\.ts$/,
+      testIgnore: /\.dev\.spec\.ts$|studio\.(spec|setup)\.ts$/,
       use: { ...devices['iPhone 14'], baseURL: 'http://localhost:3000' },
     },
     {
@@ -47,6 +47,32 @@ export default defineConfig({
       testMatch: /\.dev\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'], baseURL: 'http://localhost:3100' },
     },
+    /**
+     * Lo Studio si autentica con SSO: senza un token questi test si
+     * fermerebbero alla schermata di login. Non vengono registrati affatto
+     * quando la variabile manca — una suite che fallisce per una credenziale
+     * assente si impara a ignorarla, ed e il primo passo verso una suite che
+     * non si guarda piu.
+     */
+    ...(process.env.SANITY_E2E_AUTH_TOKEN
+      ? [
+          {
+            name: 'studio-setup',
+            testMatch: /studio\.setup\.ts$/,
+            use: { ...devices['Desktop Chrome'], baseURL: 'http://localhost:3000' },
+          },
+          {
+            name: 'studio',
+            testMatch: /studio\.spec\.ts$/,
+            dependencies: ['studio-setup'],
+            use: {
+              ...devices['Desktop Chrome'],
+              baseURL: 'http://localhost:3000',
+              storageState: './e2e/.auth/studio.json',
+            },
+          },
+        ]
+      : []),
   ],
   webServer: [
     {
