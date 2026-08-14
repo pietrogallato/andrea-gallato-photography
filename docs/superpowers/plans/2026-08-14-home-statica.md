@@ -139,10 +139,34 @@ in questo repository, dentro un task che ha altro da dimostrare.
 npx playwright test --project=chromium e2e/home.spec.ts
 ```
 
-Atteso, in ordine: `la home non scorre su desktop` **fallisce** (il footer aggiunge
-altezza); `su uno schermo basso la home scorre` **fallisce** (oggi il contenuto e in
-posizione assoluta e viene tagliato); `il footer non e nella home` **fallisce**; i due test
-dell'invito **falliscono** perche il collegamento non esiste ancora.
+Atteso: **sei fallimenti su sei.**
+
+| Test | Perché fallisce ora |
+|---|---|
+| non scorre su desktop | il footer aggiunge altezza |
+| non scorre su telefono | stessa causa |
+| su schermo basso scorre | `home-intro` non esiste ancora (Task 3) |
+| footer assente nella home | il footer e ancora nel layout |
+| l'invito porta alla galleria | il collegamento non esiste |
+| l'invito e raggiungibile | stessa causa |
+
+**Una trappola nell'ordine dei task, misurata il 14 agosto 2026.** Dentro il test sullo
+schermo basso, l'asserzione `scorre(page) === true` **passa fin da ora**, ma per la ragione
+sbagliata: a 640×340 la sezione di apertura (`92dvh`, cioè ~298px) ci sta dentro e
+l'introduzione è già visibile a y≈207. A far scorrere la pagina è il **footer**, che occupa
+da y≈442 a y≈580.
+
+Quando il Task 2 toglierà il footer, l'altezza scenderà a ~298px sotto i 340 del viewport e
+quella asserzione comincerà a fallire — stavolta per il motivo vero, cioè il contenuto in
+posizione assoluta che verrebbe tagliato. Il Task 3 la fa tornare verde.
+
+Chi esegue il Task 2 deve quindi vedere il messaggio di questo test **cambiare**: da
+«`home-intro` non trovato» a «expected true, received false». Se continuasse a lamentare
+solo il testid, vorrebbe dire che il footer non è stato davvero rimosso dalla home.
+
+**Nota sul locatore.** Il test cerca l'introduzione con `getByTestId('home-intro')` invece
+che con `main p`: quest'ultimo reggeva solo per coincidenza, perché oggi nella home c'è un
+solo paragrafo. L'attributo viene aggiunto dal Task 3.
 
 - [ ] **Step 3: Commit**
 
@@ -344,7 +368,7 @@ In `views/HomeView.tsx`, sostituire il `return` finale con:
       <div className={styles.content}>
         <h1 className={styles.title}>{siteName}</h1>
         {intro.value ? (
-          <p className={styles.intro} lang={introLang}>
+          <p className={styles.intro} lang={introLang} data-testid="home-intro">
             {intro.value}
           </p>
         ) : null}
@@ -353,8 +377,11 @@ In `views/HomeView.tsx`, sostituire il `return` finale con:
   )
 ```
 
-Il markup non cambia: cambia il CSS. Questo step esiste per verificare che nessuno abbia
-nel frattempo modificato il file.
+**L'unica modifica al markup è `data-testid="home-intro"`.** Serve al test dello schermo
+basso, che deve poter raggiungere l'introduzione senza pescarla per posizione: `main p`
+reggeva solo perché oggi nella home c'è un paragrafo solo, e sarebbe bastato spezzare il
+testo in due per farlo puntare altrove in silenzio. Un `data-testid` e non una classe del
+CSS Module, il cui nome viene generato in fase di build.
 
 - [ ] **Step 2: Riscrivere le regole di altezza**
 
