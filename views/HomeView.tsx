@@ -54,7 +54,7 @@ export async function HomeView({
       <div className={styles.content}>
         <h1 className={styles.title}>{siteName}</h1>
         {intro.value ? (
-          <p className={styles.intro} lang={introLang}>
+          <p className={styles.intro} lang={introLang} data-testid="home-intro">
             {intro.value}
           </p>
         ) : null}

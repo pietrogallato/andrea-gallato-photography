@@ -1,12 +1,25 @@
 /* La specifica 8.2 vuole la protagonista quasi a schermo intero. L header e
    adesivo e traslucido, quindi la fotografia gli scorre sotto: da qui il
-   margine negativo che recupera l altezza dell header. */
+   margine negativo che recupera l altezza dell header.
+
+   `min-height` e non `height`: e cio che distingue «la pagina non scorre»
+   da «la pagina non puo scorrere». In condizioni normali il contenuto sta
+   dentro e il documento non supera la finestra. Quando il contenuto cresce
+   — telefono in orizzontale, caratteri al 200% — spinge la sezione e la
+   pagina scorre, invece di tagliare via l introduzione. */
 .hero {
   position: relative;
-  height: 100dvh;
-  margin-top: calc(-1 * var(--header-height, 5.5rem));
+  min-height: 100dvh;
+  margin-top: calc(-1 * var(--header-height));
   overflow: hidden;
   isolation: isolate;
+
+  /* Il contenuto vive nel flusso e si appoggia in basso. Con
+     `position: absolute` non partecipava all altezza del genitore: crescendo
+     usciva dallo schermo senza poterlo allungare, ed e esattamente il difetto
+     che questo lavoro deve evitare. */
+  display: grid;
+  grid-template-rows: 1fr auto;
 }
 
 /* Annulla il rapporto d aspetto di SanityImage: qui la fotografia riempie il
@@ -15,6 +28,7 @@
 .heroImage {
   position: absolute;
   inset: 0;
+  z-index: 0;
   width: 100%;
   height: 100%;
   aspect-ratio: auto;
@@ -24,6 +38,7 @@
 .scrim {
   position: absolute;
   inset: 0;
+  z-index: 1;
   background: linear-gradient(
     to top,
     rgb(0 0 0 / 0.78) 0%,
@@ -34,10 +49,10 @@
 }
 
 .content {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
+  z-index: 2;
+  grid-row: 2;
+  width: 100%;
   padding: var(--space-6) var(--space-5) var(--space-7);
   max-width: var(--content-max);
   margin: 0 auto;
@@ -69,8 +84,12 @@
 }
 
 @media (max-width: 767px) {
+  /* Sotto il breakpoint l header e piu basso: usare il token desktop faceva
+     risalire la fotografia di 16px piu del dovuto. Prima non si notava perche
+     sotto c era il footer; con la home a schermo esatto la pagina risulterebbe
+     piu corta della finestra. */
   .hero {
-    height: 92dvh;
+    margin-top: calc(-1 * var(--header-height-compact));
   }
 
   .content {
