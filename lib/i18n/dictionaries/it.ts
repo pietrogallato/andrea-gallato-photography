@@ -30,6 +30,7 @@ export const it = {
   previewAttiva: 'Anteprima: stai vedendo anche le bozze',
   previewEsci: 'Esci dall’anteprima',
   previewVaiAlSito: 'Vai alla pagina pubblica',
+  homeEnter: 'Guarda le fotografie',
 
 } as const
 

@@ -1,5 +1,8 @@
+import Link from 'next/link'
 import { type Locale } from '@/lib/i18n/locales'
 import { pickLocalized } from '@/lib/i18n/localize'
+import { getDictionary } from '@/lib/i18n/dictionaries'
+import { pathFor } from '@/lib/i18n/routes'
 import { sanityFetch } from '@/lib/sanity/fetch'
 import { homeHeroQuery } from '@/lib/sanity/queries'
 import { toGalleryPhoto } from '@/lib/gallery/toGalleryPhoto'
@@ -20,6 +23,7 @@ export async function HomeView({
 
   const intro = pickLocalized({ it: home?.introIt, en: home?.introEn }, locale)
   const introLang = intro.lang === locale ? undefined : intro.lang
+  const dict = getDictionary(locale)
 
   if (!hero) {
     return (
@@ -58,6 +62,13 @@ export async function HomeView({
             {intro.value}
           </p>
         ) : null}
+        <Link href={pathFor(locale, { key: 'gallery' })} className={styles.enter}>
+          {dict.homeEnter}
+          {/* Freccia orizzontale, mai verso il basso: sotto non c e nulla, e
+              una freccia che promette scorrimento su una pagina che non scorre
+              e il primo gesto che il visitatore tenta a vuoto. */}
+          <span aria-hidden="true">→</span>
+        </Link>
       </div>
     </section>
   )

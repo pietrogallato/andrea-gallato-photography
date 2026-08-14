@@ -32,5 +32,6 @@ export const en: Dictionary = {
   previewAttiva: 'Preview: you are seeing drafts too',
   previewEsci: 'Leave preview',
   previewVaiAlSito: 'Go to the public page',
+  homeEnter: 'See the photographs',
 
 }
