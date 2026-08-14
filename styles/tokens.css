@@ -53,10 +53,15 @@
      di tocco minima dei controlli, non la tipografia. Stimarla lasciava una
      striscia di sfondo scoperta sopra la fotografia protagonista, che vi
      scorre sotto con un margine negativo pari a questo valore. */
-  --header-height: calc(var(--target-min) + var(--space-4) * 2);
+  /* Il filo sotto l header fa parte della sua altezza. Dimenticarlo lasciava
+     la fotografia protagonista a un pixel dal bordo, e la home — che deve
+     stare esattamente in uno schermo — risultava alta 801px su 800.
+     Misurato il 14 agosto 2026: header reso 93px contro un token da 92. */
+  --header-border: 1px;
+  --header-height: calc(var(--target-min) + var(--space-4) * 2 + var(--header-border));
   /* Sotto il breakpoint l header ha padding piu stretto. Serve al pannello
      del menu, che deve iniziare esattamente dove l header finisce. */
-  --header-height-compact: calc(var(--target-min) + var(--space-3) * 2);
+  --header-height-compact: calc(var(--target-min) + var(--space-3) * 2 + var(--header-border));
 
   /* Movimento lento e senza rimbalzi, come chiede la specifica 7. L uscita
      esponenziale parte decisa e si posa: e la curva che fa sembrare un
