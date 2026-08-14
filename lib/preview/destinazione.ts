@@ -26,6 +26,20 @@ export type RichiestaAnteprima = {
   slug?: string | null
 }
 
+/** Il segmento sotto cui vive l'anteprima, dinamico e non indicizzato. */
+export const SEGMENTO_ANTEPRIMA = 'preview'
+
+/**
+ * Lo stesso percorso, dentro il segmento di anteprima.
+ *
+ * `/it/fotografie` diventa `/it/preview/fotografie`: le pagine pubbliche
+ * restano statiche e non sanno nulla delle bozze, l'anteprima vive accanto.
+ */
+export function inAnteprima(percorso: string): string {
+  const [, lingua, ...resto] = percorso.split('/')
+  return ['', lingua, SEGMENTO_ANTEPRIMA, ...resto].join('/')
+}
+
 export function risolviDestinazione({ locale, tipo, slug }: RichiestaAnteprima): string {
   // L'italiano e la lingua principale del sito: e il ripiego, non un errore.
   const lingua: Locale = isLocale(locale ?? '') ? (locale as Locale) : 'it'

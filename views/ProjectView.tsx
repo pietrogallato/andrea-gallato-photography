@@ -7,12 +7,21 @@ import { toProjectDetail } from '@/lib/projects/toProject'
 import { ProjectSequence } from '@/components/projects/ProjectSequence'
 import styles from './ProjectView.module.css'
 
-export async function ProjectView({ locale, slug }: { locale: Locale; slug: string }) {
+export async function ProjectView({
+  locale,
+  slug,
+  preview = false,
+}: {
+  locale: Locale
+  slug: string
+  preview?: boolean
+}) {
   const dict = getDictionary(locale)
   const raw = await sanityFetch({
     query: projectBySlugQuery,
     params: { slug },
     tags: [`project:${slug}`],
+    preview,
   })
 
   const project = toProjectDetail(raw, locale)

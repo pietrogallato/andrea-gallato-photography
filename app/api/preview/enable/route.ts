@@ -1,6 +1,6 @@
 import { draftMode } from 'next/headers'
 import { NextResponse, type NextRequest } from 'next/server'
-import { risolviDestinazione } from '@/lib/preview/destinazione'
+import { inAnteprima, risolviDestinazione } from '@/lib/preview/destinazione'
 import { segretoCorretto } from '@/lib/preview/segreto'
 
 /**
@@ -24,11 +24,16 @@ export async function GET(request: NextRequest) {
     return new NextResponse('Non autorizzato', { status: 401 })
   }
 
-  const destinazione = risolviDestinazione({
-    locale: parametri.get('locale'),
-    tipo: parametri.get('type'),
-    slug: parametri.get('slug'),
-  })
+  // Si atterra **dentro** il segmento di anteprima: sulle pagine pubbliche il
+  // cookie non servirebbe a nulla, perche sono statiche e non leggono le
+  // bozze per costruzione.
+  const destinazione = inAnteprima(
+    risolviDestinazione({
+      locale: parametri.get('locale'),
+      tipo: parametri.get('type'),
+      slug: parametri.get('slug'),
+    }),
+  )
 
   // Asincrona in Next 16.
   const anteprima = await draftMode()

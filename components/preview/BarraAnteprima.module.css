@@ -1,0 +1,27 @@
+/* Sta in cima e non si nasconde: e un avviso, non una decorazione. */
+.barra {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  background: var(--focus-ring);
+  color: #08080a;
+  font-size: 0.875rem;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.esci,
+.pubblica {
+  color: inherit;
+  text-decoration: underline;
+  /* Area di tocco piena, sotto il minimo dei 44px il testo e piccolo. */
+  padding: var(--space-2) 0;
+  min-height: var(--target-min);
+  display: inline-flex;
+  align-items: center;
+}

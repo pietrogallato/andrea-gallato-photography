@@ -27,6 +27,10 @@ export const it = {
   portraitOf: 'Ritratto di',
   lightboxNext: 'Fotografia successiva',
   lightboxLoading: 'Caricamento della fotografia',
+  previewAttiva: 'Anteprima: stai vedendo anche le bozze',
+  previewEsci: 'Esci dall’anteprima',
+  previewVaiAlSito: 'Vai alla pagina pubblica',
+
 } as const
 
 export type Dictionary = Record<keyof typeof it, string>

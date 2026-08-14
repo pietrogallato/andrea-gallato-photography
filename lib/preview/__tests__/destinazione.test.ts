@@ -1,5 +1,26 @@
 import { describe, it, expect } from 'vitest'
-import { risolviDestinazione } from '../destinazione'
+import { inAnteprima, risolviDestinazione } from '../destinazione'
+
+describe('inAnteprima', () => {
+  it('infila il segmento dopo la lingua', () => {
+    expect(inAnteprima('/it/fotografie')).toBe('/it/preview/fotografie')
+    expect(inAnteprima('/en/projects/concorso-trieste')).toBe(
+      '/en/preview/projects/concorso-trieste',
+    )
+  })
+
+  it('vale anche per la home, che non ha altri segmenti', () => {
+    expect(inAnteprima('/it')).toBe('/it/preview')
+  })
+
+  it('lascia il percorso dentro il sito', () => {
+    for (const p of ['/it', '/en/about', '/it/progetti']) {
+      const a = inAnteprima(p)
+      expect(a.startsWith('/')).toBe(true)
+      expect(a.startsWith('//')).toBe(false)
+    }
+  })
+})
 
 describe('risolviDestinazione', () => {
   it('manda alla pagina chiesta nella lingua chiesta', () => {

@@ -7,9 +7,15 @@ import { ProjectsList } from '@/components/projects/ProjectsList'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import styles from './ProjectsView.module.css'
 
-export async function ProjectsView({ locale }: { locale: Locale }) {
+export async function ProjectsView({
+  locale,
+  preview = false,
+}: {
+  locale: Locale
+  preview?: boolean
+}) {
   const dict = getDictionary(locale)
-  const raw = await sanityFetch({ query: projectsIndexQuery, tags: ['projects-index'] })
+  const raw = await sanityFetch({ query: projectsIndexQuery, tags: ['projects-index'] , preview })
   const projects = (raw ?? []).map((p) => toProjectSummary(p, locale))
 
   return (

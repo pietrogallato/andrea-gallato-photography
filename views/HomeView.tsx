@@ -6,8 +6,16 @@ import { toGalleryPhoto } from '@/lib/gallery/toGalleryPhoto'
 import { SanityImage } from '@/components/media/SanityImage'
 import styles from './HomeView.module.css'
 
-export async function HomeView({ locale, siteName }: { locale: Locale; siteName: string }) {
-  const home = await sanityFetch({ query: homeHeroQuery, tags: ['home'] })
+export async function HomeView({
+  locale,
+  siteName,
+  preview = false,
+}: {
+  locale: Locale
+  siteName: string
+  preview?: boolean
+}) {
+  const home = await sanityFetch({ query: homeHeroQuery, tags: ['home'] , preview })
   const hero = home?.heroPhoto ? toGalleryPhoto(home.heroPhoto, locale) : null
 
   const intro = pickLocalized({ it: home?.introIt, en: home?.introEn }, locale)

@@ -29,4 +29,8 @@ export const en: Dictionary = {
   portraitOf: 'Portrait of',
   lightboxNext: 'Next photograph',
   lightboxLoading: 'Loading the photograph',
+  previewAttiva: 'Preview: you are seeing drafts too',
+  previewEsci: 'Leave preview',
+  previewVaiAlSito: 'Go to the public page',
+
 }

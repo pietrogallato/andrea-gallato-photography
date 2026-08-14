@@ -1,37 +1,24 @@
 'use server'
 
-import { sanityFetch } from '@/lib/sanity/fetch'
-import { galleryPageQuery, galleryCountQuery } from '@/lib/sanity/queries'
-import { toGalleryPhoto } from '@/lib/gallery/toGalleryPhoto'
-import { packRows, K_DESKTOP } from '@/lib/gallery/packRows'
-import type { Row } from '@/lib/gallery/packRows'
-import type { GalleryPhoto } from '@/components/gallery/types'
+import { draftMode } from 'next/headers'
+import { caricaRighe, type LoadMoreResult } from '@/lib/gallery/caricaRighe'
 import type { Locale } from '@/lib/i18n/locales'
-import { PAGE_SIZE } from '@/lib/gallery/pageSize'
 
-export type LoadMoreResult = {
-  rows: Row<GalleryPhoto>[]
-  hasMore: boolean
-  total: number
-}
+export type { LoadMoreResult }
 
+/**
+ * Il «Carica altre» della galleria.
+ *
+ * **Decide da se se siamo in anteprima**, leggendo il cookie invece di
+ * accettare un argomento: un flag passato dal client non e una credenziale, e
+ * chiunque potrebbe invocare l'azione con `preview: true` per leggere le
+ * bozze.
+ *
+ * Chiamare `draftMode()` qui non rende dinamica nessuna pagina: una Server
+ * Action gira sempre a tempo di richiesta. Il percorso di rendering usa
+ * invece `caricaRighe`, che non la tocca.
+ */
 export async function loadMorePhotos(offset: number, locale: Locale): Promise<LoadMoreResult> {
-  const total = await sanityFetch({ query: galleryCountQuery, tags: ['gallery'] })
-
-  const raw = await sanityFetch({
-    query: galleryPageQuery,
-    params: { start: offset, end: offset + PAGE_SIZE },
-    tags: ['gallery'],
-  })
-
-  const photos = (raw ?? []).map((p) => toGalleryPhoto(p, locale))
-
-  return {
-    rows: packRows(photos, K_DESKTOP),
-    // Confronta col totale quante fotografie il client ha ora in mano. Dedurre
-    // hasMore dal solo numero di elementi ricevuti (photos.length === PAGE_SIZE)
-    // sbaglierebbe quando l ultimo gruppo e esattamente pieno.
-    hasMore: offset + photos.length < (total ?? 0),
-    total: total ?? 0,
-  }
+  const { isEnabled } = await draftMode()
+  return caricaRighe(offset, locale, isEnabled)
 }

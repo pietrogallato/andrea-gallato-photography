@@ -7,9 +7,17 @@ import { SanityImage } from '@/components/media/SanityImage'
 import { EmptyState } from '@/components/feedback/EmptyState'
 import styles from './AboutView.module.css'
 
-export async function AboutView({ locale, siteName }: { locale: Locale; siteName: string }) {
+export async function AboutView({
+  locale,
+  siteName,
+  preview = false,
+}: {
+  locale: Locale
+  siteName: string
+  preview?: boolean
+}) {
   const dict = getDictionary(locale)
-  const about = await sanityFetch({ query: aboutPageQuery, tags: ['about'] })
+  const about = await sanityFetch({ query: aboutPageQuery, tags: ['about'] , preview })
 
   if (!about) {
     return <EmptyState message={dict.errorGeneric} />
