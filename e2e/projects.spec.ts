@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 
 async function apriControlli(page: import('@playwright/test').Page, isMobile?: boolean) {
   if (!isMobile) return

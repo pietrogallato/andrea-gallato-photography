@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 
 test('la galleria mostra le fotografie in entrambe le lingue', async ({ page }) => {
   await page.goto('/it/fotografie')
@@ -137,9 +137,14 @@ test('quando la fotografia tarda, l attesa e dichiarata', async ({ page, isMobil
 
   // Il rallentamento si installa solo ora: applicato prima renderebbe lento
   // anche il caricamento della galleria, senza aggiungere nulla.
+  //
+  // `fallback` e non `continue`: la fotografia deve arrivare dal fixture
+  // locale registrato sul contesto, solo in ritardo. Con `continue` la
+  // richiesta uscirebbe verso cdn.sanity.io, rimettendo questo test — e solo
+  // questo — nelle mani di un terzo.
   await page.route('**cdn.sanity.io**', async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 1500))
-    await route.continue()
+    await route.fallback()
   })
 
   await dialog.getByRole('button', { name: 'Fotografia successiva' }).click()

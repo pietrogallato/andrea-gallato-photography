@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Page } from './fixtures'
 
 /**
  * Questi test girano contro `next dev`, non contro il build di produzione.

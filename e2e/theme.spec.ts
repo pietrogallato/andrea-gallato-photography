@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 
 /**
  * Sotto il breakpoint mobile lingua e tema non stanno nell header: vivono nel

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, nuovoContesto } from './fixtures'
 
 /**
  * Sotto il breakpoint mobile lingua e tema non stanno nell header: vivono nel
@@ -56,7 +56,7 @@ test('un locale non supportato restituisce 404', async ({ page }) => {
 test('gli href del selettore lingua sono corretti nell HTML senza JavaScript', async ({ browser }) => {
   // Viewport desktop esplicito: senza JavaScript il menu mobile non si apre,
   // e sotto il breakpoint il selettore lingua vive li dentro.
-  const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1280, height: 720 } })
+  const context = await nuovoContesto(browser, { javaScriptEnabled: false, viewport: { width: 1280, height: 720 } })
   const page = await context.newPage()
   await page.goto('/it')
 
@@ -138,7 +138,7 @@ test('resta sulla stessa pagina anche dalla galleria, dove il segmento cambia no
 test('gli href del selettore puntano alla pagina corrente gia nell HTML, senza JavaScript', async ({
   browser,
 }) => {
-  const context = await browser.newContext({
+  const context = await nuovoContesto(browser, {
     javaScriptEnabled: false,
     viewport: { width: 1280, height: 720 },
   })

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 
 test('ogni pagina dichiara canonical assoluto e due hreflang', async ({ page }) => {
   await page.goto('/it/progetti/nebbia')

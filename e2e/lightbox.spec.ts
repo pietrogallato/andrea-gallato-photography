@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 
 async function openFirst(page: import('@playwright/test').Page) {
   await page.goto('/it/fotografie')
