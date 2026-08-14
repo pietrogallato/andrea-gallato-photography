@@ -18,7 +18,13 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    trace: 'on-first-retry',
+    // `on-first-retry` non registrava nulla: `retries` e zero, quindi un primo
+    // tentativo fallito era anche l ultimo. Un timeout di rete lasciava dietro
+    // di se solo "page.goto: Test timeout", senza dire quale richiesta fosse
+    // rimasta appesa. `retain-on-failure` registra durante ogni test e tiene la
+    // traccia solo di quelli falliti: al prossimo blocco la richiesta colpevole
+    // e li dentro.
+    trace: 'retain-on-failure',
   },
   projects: [
     {
