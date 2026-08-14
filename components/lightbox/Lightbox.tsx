@@ -5,6 +5,7 @@ import type { Locale } from '@/lib/i18n/locales'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
 import type { GalleryPhoto } from '@/components/gallery/types'
 import { SanityImage } from '@/components/media/SanityImage'
+import { sizesForLightbox } from '@/lib/lightbox/sizes'
 import { LightboxCaption } from './LightboxCaption'
 import { useScrollLock } from './useScrollLock'
 import styles from './Lightbox.module.css'
@@ -112,7 +113,7 @@ export function Lightbox({
       <figure className={styles.figure} aria-busy={!loaded}>
         <SanityImage
           photo={{ url: photo.url, aspectRatio: photo.ar, lqip: photo.lqip, alt: photo.alt, altLang: photo.altLang }}
-          sizes="100vw"
+          sizes={sizesForLightbox(photo.ar)}
           locale={locale}
           className={styles.image}
           onLoad={() => setLoaded(true)}
