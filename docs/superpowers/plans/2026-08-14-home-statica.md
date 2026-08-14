@@ -43,9 +43,9 @@ costringerla a inventarsi un locale.
 
 ## Task 1: I test che definiscono il lavoro
 
-Si scrivono per primi e **devono fallire tutti**. Quello sullo schermo basso è il più
+Si scrivono per primi e **devono fallire tutti**. Quello sui caratteri al 200% è il più
 importante: senza di lui, un `overflow: hidden` farebbe passare gli altri due sul non
-scorrimento, tagliando via l'introduzione a chi ha ingrandito i caratteri.
+scorrimento, tagliando via l'introduzione a chi ha ingrandito il testo.
 
 **Files:**
 - Create: `e2e/home.spec.ts`
@@ -78,19 +78,32 @@ test('la home non scorre su telefono', async ({ page }) => {
 })
 
 /**
- * L eccezione, e il motivo per cui esiste questo test: su uno schermo troppo
- * basso il contenuto non ci sta. La pagina deve **scorrere**, non tagliare:
- * WCAG 1.4.4 chiede che il testo possa raddoppiare senza perdere contenuto.
+ * L eccezione, e il motivo per cui questo test esiste: WCAG 1.4.4 chiede che
+ * il testo possa raddoppiare senza perdere contenuto. Coi caratteri al 200%
+ * il contenuto non ci sta piu, e la pagina deve **scorrere**, non tagliare.
  * Senza questo test, un `overflow: hidden` farebbe passare gli altri due.
+ *
+ * **Misurato il 14 agosto 2026.** Una prova basata sul solo schermo basso non
+ * serviva: a 640x340, con l introduzione vera, il contenuto misura 212px e ci
+ * sta comodamente — la soglia reale e a 211px di altezza, che nessun telefono
+ * ha. E l ingrandimento del testo, non lo schermo piccolo, a mettere davvero
+ * alla prova la regola.
  */
-test('su uno schermo basso la home scorre invece di tagliare', async ({ page }) => {
-  await page.setViewportSize({ width: 640, height: 340 })
+test('coi caratteri al 200% la home scorre invece di tagliare', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/it')
 
-  expect(await scorre(page)).toBe(true)
+  // 32px su una radice da 16px: il raddoppio che le linee guida chiedono.
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = '32px'
+  })
+
+  // `poll` e non un assert secco: il riflusso dopo il cambio di dimensione non
+  // e istantaneo, e un confronto immediato misurerebbe il layout di prima.
+  await expect.poll(() => scorre(page)).toBe(true)
 
   // L introduzione resta raggiungibile: e cio che si sarebbe perso tagliando.
-  const intro = page.locator('main p').first()
+  const intro = page.getByTestId('home-intro')
   await intro.scrollIntoViewIfNeeded()
   await expect(intro).toBeVisible()
 })
@@ -118,6 +131,7 @@ test('l invito porta alla galleria, con l etichetta della lingua', async ({ page
 test('l invito e raggiungibile e ha un area di tocco sufficiente', async ({ page }) => {
   await page.goto('/it')
   const invito = page.getByRole('link', { name: 'Guarda le fotografie' })
+  await expect(invito).toBeVisible()
 
   const box = await invito.boundingBox()
   expect(box!.height).toBeGreaterThanOrEqual(44)
@@ -150,19 +164,17 @@ Atteso: **sei fallimenti su sei.**
 | l'invito porta alla galleria | il collegamento non esiste |
 | l'invito e raggiungibile | stessa causa |
 
-**Una trappola nell'ordine dei task, misurata il 14 agosto 2026.** Dentro il test sullo
-schermo basso, l'asserzione `scorre(page) === true` **passa fin da ora**, ma per la ragione
-sbagliata: a 640×340 la sezione di apertura (`92dvh`, cioè ~298px) ci sta dentro e
-l'introduzione è già visibile a y≈207. A far scorrere la pagina è il **footer**, che occupa
-da y≈442 a y≈580.
+**Il criterio è cambiato in corsa, dopo averlo misurato.** La prima stesura pretendeva che
+a 640×340 la home scorresse. Non funzionava: con l'introduzione vera il contenuto misura
+212px e a quell'altezza ci sta comodamente. La soglia reale è a **211px di altezza di
+finestra**, che nessun telefono ha — quel test non esercitava nulla.
 
-Quando il Task 2 toglierà il footer, l'altezza scenderà a ~298px sotto i 340 del viewport e
-quella asserzione comincerà a fallire — stavolta per il motivo vero, cioè il contenuto in
-posizione assoluta che verrebbe tagliato. Il Task 3 la fa tornare verde.
+A trovarlo è stata una ricerca binaria sull'altezza durante il Task 3: a 212px non scorre, a
+211px scorre. Il meccanismo era giusto, era la prova a essere mal scelta.
 
-Chi esegue il Task 2 deve quindi vedere il messaggio di questo test **cambiare**: da
-«`home-intro` non trovato» a «expected true, received false». Se continuasse a lamentare
-solo il testid, vorrebbe dire che il footer non è stato davvero rimosso dalla home.
+Il test ora porta la radice da 16px a 32px, che è il raddoppio richiesto da WCAG 1.4.4 e lo
+scenario che la spec nominava per primo. Misurato: a 390×844 il documento passa da 844 a
+865px e la pagina scorre, con l'introduzione ancora raggiungibile.
 
 **Nota sul locatore.** Il test cerca l'introduzione con `getByTestId('home-intro')` invece
 che con `main p`: quest'ultimo reggeva solo per coincidenza, perché oggi nella home c'è un
@@ -321,8 +333,9 @@ npx playwright test --project=chromium e2e/home.spec.ts
 
 Atteso: passano `la home non scorre su desktop`, `la home non scorre su telefono` e
 `il footer non e nella home ed e nelle altre pagine`. **Continua a fallire**
-`su uno schermo basso la home scorre invece di tagliare`: il contenuto e ancora in posizione
-assoluta e viene tagliato.
+`coi caratteri al 200% la home scorre invece di tagliare`, perche il contenuto e ancora in
+posizione assoluta: crescendo esce dallo schermo senza allungare la pagina, cioe viene
+tagliato invece di far scorrere.
 
 - [ ] **Step 7: Commit**
 
@@ -481,7 +494,7 @@ npx playwright test --project=chromium e2e/home.spec.ts
 ```
 
 Atteso: **tutti e quattro i test passano**, compreso
-`su uno schermo basso la home scorre invece di tagliare`.
+`coi caratteri al 200% la home scorre invece di tagliare`.
 
 - [ ] **Step 4: Commit**
 
