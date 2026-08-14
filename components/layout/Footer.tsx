@@ -1,12 +1,15 @@
-import { type Locale } from '@/lib/i18n/locales'
 import styles from './Footer.module.css'
 
+/**
+ * Non riceve la lingua perche non ha testo localizzato: solo l anno, il nome e
+ * una mail. Il parametro c era e non veniva usato, e senza di esso la pagina
+ * 404 — che in Next non riceve `params` — puo renderlo senza inventarsi un
+ * locale.
+ */
 export function Footer({
-  locale,
   siteName,
   email,
 }: {
-  locale: Locale
   siteName: string
   email?: string
 }) {

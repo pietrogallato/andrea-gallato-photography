@@ -13,6 +13,7 @@ import { GalleryView } from '@/views/GalleryView'
 import { AboutView } from '@/views/AboutView'
 import { ProjectsView } from '@/views/ProjectsView'
 import { ProjectView } from '@/views/ProjectView'
+import { Footer } from '@/components/layout/Footer'
 
 export async function generateStaticParams() {
   const slugs = await sanityFetch({ query: projectSlugsQuery, tags: ['projects-index'] })
@@ -100,25 +101,23 @@ export default async function Page({
   const route = resolveRoute(locale, segments ?? [])
   if (!route) notFound()
 
-  switch (route.key) {
-    case 'home': {
-      const settings = await sanityFetch({ query: siteSettingsQuery, tags: ['settings'] })
-      return <HomeView locale={locale} siteName={settings?.photographerName ?? 'Andrea Gallato'} />
-    }
-    case 'gallery':
-      return <GalleryView locale={locale} />
+  // Letto una volta sola: serve al nome del fotografo e al footer.
+  const settings = await sanityFetch({ query: siteSettingsQuery, tags: ['settings'] })
+  const siteName = settings?.photographerName ?? 'Andrea Gallato'
 
-    case 'projects':
-      return <ProjectsView locale={locale} />
+  // La home e una sola schermata: il footer e cio che la farebbe scorrere.
+  // La decisione sta qui perche il layout non riceve i segmenti della rotta.
+  const conFooter = route.key !== 'home'
 
-    case 'project':
-      return <ProjectView locale={locale} slug={route.slug} />
+  return (
+    <>
+      {route.key === 'home' ? <HomeView locale={locale} siteName={siteName} /> : null}
+      {route.key === 'gallery' ? <GalleryView locale={locale} /> : null}
+      {route.key === 'projects' ? <ProjectsView locale={locale} /> : null}
+      {route.key === 'project' ? <ProjectView locale={locale} slug={route.slug} /> : null}
+      {route.key === 'about' ? <AboutView locale={locale} siteName={siteName} /> : null}
 
-    case 'about': {
-      const settings = await sanityFetch({ query: siteSettingsQuery, tags: ['settings'] })
-      return <AboutView locale={locale} siteName={settings?.photographerName ?? 'Andrea Gallato'} />
-    }
-    default:
-      notFound()
-  }
+      {conFooter ? <Footer siteName={siteName} email={settings?.email ?? undefined} /> : null}
+    </>
+  )
 }

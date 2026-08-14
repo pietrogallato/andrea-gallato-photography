@@ -9,7 +9,6 @@ import { siteUrl } from '@/lib/siteUrl'
 import { ThemeScript } from '@/components/theme/ThemeScript'
 import { SkipLink } from '@/components/layout/SkipLink'
 import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
 import { sanityFetch } from '@/lib/sanity/fetch'
 import { siteSettingsQuery } from '@/lib/sanity/queries'
 
@@ -80,7 +79,6 @@ export default async function LocaleLayout({
         <SkipLink label={dict.skipToContent} />
         <Header locale={locale} siteName={siteName} />
         <main id="main">{children}</main>
-        <Footer locale={locale} siteName={siteName} email={settings?.email ?? undefined} />
       </body>
     </html>
   )

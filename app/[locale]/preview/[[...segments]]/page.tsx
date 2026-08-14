@@ -11,6 +11,7 @@ import { AboutView } from '@/views/AboutView'
 import { ProjectsView } from '@/views/ProjectsView'
 import { ProjectView } from '@/views/ProjectView'
 import { BarraAnteprima } from '@/components/preview/BarraAnteprima'
+import { Footer } from '@/components/layout/Footer'
 
 /**
  * L'anteprima, in un segmento **dichiaratamente dinamico**.
@@ -57,6 +58,10 @@ export default async function PaginaAnteprima({
       {route.key === 'about' ? <AboutView locale={locale} siteName={siteName} preview /> : null}
       {route.key === 'project' ? (
         <ProjectView locale={locale} slug={route.slug} preview />
+      ) : null}
+
+      {route.key !== 'home' ? (
+        <Footer siteName={siteName} email={settings?.email ?? undefined} />
       ) : null}
     </>
   )
