@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { clearPersistedFetchCache } from './scripts/build/fetchCache'
 
 const nextConfig: NextConfig = {
   redirects: async () => [
@@ -12,4 +13,19 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+/**
+ * La configurazione e una funzione della fase per un solo motivo: eliminare,
+ * prima di ogni build di produzione, la cache dei fetch lasciata dal build
+ * precedente. Senza, il build renderizza dati stantii — vedi il commento di
+ * `clearPersistedFetchCache` per il meccanismo.
+ *
+ * Il caricamento della configurazione precede la generazione delle pagine e
+ * avviene qualunque sia il comando che ha avviato il build, che e la ragione
+ * per cui la pulizia sta qui e non in uno script di npm.
+ */
+export default function config(phase: string): NextConfig {
+  const removed = clearPersistedFetchCache({ phase, distDir: nextConfig.distDir })
+  if (removed) console.log(`- Cache dei fetch rimossa (${removed}): il build rilegge Sanity`)
+
+  return nextConfig
+}

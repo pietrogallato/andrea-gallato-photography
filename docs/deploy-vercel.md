@@ -54,6 +54,14 @@ npx sanity@latest cors add https://<dominio-vercel> --credentials
 
 **3. Controllare i metadati.** `curl -s https://<dominio>/it | grep -o '<title>[^<]*</title>'` deve restituire il titolo SEO da Sanity, non il nome di ripiego.
 
+**4. Controllare che il build abbia riletto Sanity.** Nel log deve comparire una riga come:
+
+```
+- Cache dei fetch rimossa (.next/cache/fetch-cache): il build rilegge Sanity
+```
+
+Vercel ripristina la cache di build fra un deploy e l'altro, e le risposte di Sanity vi restano valide a tempo indeterminato — sono messe in cache con `revalidate: false`. Senza quella rimozione il build renderizza i dati del build precedente, e il sintomo più visibile è una sitemap a cui mancano i progetti creati nel frattempo. La riga manca solo al primo deploy, quando non c'è ancora nulla da rimuovere.
+
 ## Nota sulla visibilità
 
 Il repository è privato. Il sito pubblicato è invece pubblico: chiunque abbia l'indirizzo lo vede. Finché contiene placeholder non è un problema; quando conterrà le fotografie di Andrea, è una pubblicazione a tutti gli effetti e va trattata come tale.

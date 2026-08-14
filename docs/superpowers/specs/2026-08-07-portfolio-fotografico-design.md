@@ -193,6 +193,12 @@ client.fetch(query, params, { cache: 'force-cache', next: { tags, revalidate: fa
 
 `cache: 'force-cache'` è **necessario**: in Next il caching di `fetch` non è attivo per default e i tag da soli non sono un opt-in al Data Cache. Senza, nessuna risposta finisce in cache, `revalidateTag` non ha nulla da invalidare e ogni visita colpisce l'API Sanity — un fallimento invisibile in sviluppo che si manifesta solo in produzione. Tag e revalidation a tempo sono mutuamente esclusivi.
 
+**Correzione del 9 agosto 2026, riprodotta in modo deterministico.** Questo design dava per scontato che un nuovo build rispecchiasse sempre lo stato corrente del dataset. Non è vero, e la causa è proprio `revalidate: false`. Next persiste le risposte di `fetch` in `.next/cache/fetch-cache` — nel sorgente di `FileSystemCache` il commento dichiara l'intento, "so it can be persisted across deploys" — e la chiave di cache è l'hash di URL, metodo, header e opzioni: **non contiene alcun identificativo del build**. Senza scadenza a tempo le voci restano valide a tempo indeterminato, quindi il build successivo le riusa e renderizza lo stato del dataset di *quando quelle voci sono state scritte*.
+
+I tag non colmano il buco: `revalidateTag` scrive in un manifest tenuto in memoria dal processo server, che non sopravvive al build. Ne segue che una voce riusata da un build all'altro può solo essere più vecchia del dataset, mai più recente. Poiché Vercel ripristina la cache di build fra un deploy e l'altro, **ripubblicare non è un modo affidabile per aggiornare il contenuto**: misurato sul dataset `production`, un build con la cache calda produceva una sitemap con 8 `<loc>` e nessun progetto, e lo stesso build dopo `rm -rf .next/cache/fetch-cache` ne produceva 10 con `/it/progetti/concorso-trieste` e `/en/projects/concorso-trieste`.
+
+Il rimedio non tocca la strategia di cache, che resta `force-cache` più tag: `next.config.ts` è una funzione della fase e, nella sola fase di build di produzione, elimina `.next/cache/fetch-cache` (vedi `scripts/build/fetchCache.ts`). La cache di Turbopack, accanto ad essa, va conservata: accelera la compilazione senza falsare i dati. Sta nella configurazione e non in uno script npm perché la configurazione viene caricata da `next build` comunque venga invocato. Il costo è una query Sanity per ogni query distinta del sito, una volta per build.
+
 **`sanityFetch` non chiama mai `draftMode()`.** `draftMode` è una Dynamic API: se il punto di accesso unico ai dati la invocasse, ogni pagina del sito diventerebbe dinamica per tutti i visitatori, annullando l'intera strategia di cache. L'anteprima è isolata come descritto in §12.
 
 Le query stanno in `lib/sanity/queries.ts`, scritte con `defineQuery` importato da `next-sanity`. Ogni query proietta solo i campi necessari e include sempre `asset->metadata.dimensions` e `asset->metadata.lqip`. I riferimenti opzionali vengono filtrati **prima** di essere dereferenziati, con `photos[defined(@->)]->{…}`.
@@ -208,6 +214,10 @@ Le query stanno in `lib/sanity/queries.ts`, scritte con `defineQuery` importato 
 **Le pagine di progetto dichiarano solo `project:<id>`, mai un tag per ogni fotografia.** Next limita a 128 il numero di tag per fetch: un progetto con più di ~125 scatti supererebbe il limite con comportamento non definito, e per un portfolio fotografico non è uno scenario esotico. Le dipendenze inverse sono risolte dal webhook (§5.3), non dai tag di pagina.
 
 Le entry di cache sono chiavate sul percorso pubblico, perché non c'è alcun rewrite. `revalidatePath` resta comunque vietato in questo progetto: la revalidation avviene esclusivamente per tag, così la mappa delle dipendenze ha un solo punto di verità.
+
+**Le rotte di metadati partecipano alla revalidation per tag** — verificato il 9 agosto 2026 su `next start`. `app/sitemap.ts` produce una voce di prerender come le pagine, e i suoi tag finiscono negli header dell'entry: `x-next-cache-tags: …,sitemap,projects-index`. Un webhook di progetto firmato ha portato `/sitemap.xml` da 14 a 16 `<loc>` senza rigenerare il build.
+
+Va però annotato che `/sitemap.xml` **non** espone `x-nextjs-prerender`, mentre `/it/progetti` sì: è la differenza fra una rotta di App Router e una pagina, si osserva identica in locale, e non dice nulla sulla partecipazione ai tag. Non è quindi un indizio utilizzabile per diagnosticare una sitemap stantia.
 
 ### 5.3 Webhook
 
