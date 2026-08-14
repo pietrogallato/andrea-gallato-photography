@@ -29,6 +29,30 @@ describe('nextOrderRank', () => {
     expect(new Set(ranks).size).toBe(5)
   })
 
+  /**
+   * Limite noto, documentato di proposito invece che corretto qui.
+   *
+   * `nextOrderRank` legge il massimo e ci costruisce sopra: due chiamate che
+   * partono dallo stesso massimo — perche nessuna delle due ha ancora
+   * scritto — arrivano allo stesso valore. Due fotografie caricate insieme
+   * finirebbero nella stessa posizione, e l'ordine editoriale diventerebbe
+   * arbitrario.
+   *
+   * La correzione non sta in questa funzione, che non puo sapere di essere
+   * chiamata due volte: sta in chi la usa. Il tool di caricamento assegna i
+   * rank **in sequenza**, non in parallelo.
+   */
+  it('dallo stesso massimo due chiamate concorrenti danno lo stesso rank', async () => {
+    const client = clientReturning('0|hzzzzz:')
+
+    const [a, b] = await Promise.all([
+      nextOrderRank(client, 'photo'),
+      nextOrderRank(client, 'photo'),
+    ])
+
+    expect(a).toBe(b)
+  })
+
   it('interroga il rank massimo ordinando in modo decrescente', async () => {
     const client = clientReturning(null)
     await nextOrderRank(client, 'photo')
