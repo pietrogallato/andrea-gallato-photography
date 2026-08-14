@@ -147,9 +147,15 @@ documento non supera quella della finestra.
 End-to-end:
 
 - con finestra 1280×800 e 390×844 la home **non scorre** (`scrollHeight <= clientHeight`);
-- con finestra 640×340 — telefono in orizzontale — la home **scorre**
+- con i **caratteri al 200%** — la radice portata da 16px a 32px — la home **scorre**
   (`scrollHeight > clientHeight`) e l'introduzione resta raggiungibile invece di essere
   tagliata;
+
+  **Corretto il 14 agosto 2026, dopo averlo misurato.** Una prova basata sul solo schermo
+  basso non serviva: a 640×340, con l'introduzione vera, il contenuto misura 212px e ci sta
+  comodamente — la soglia reale è a 211px di altezza, che nessun telefono ha. È
+  l'ingrandimento del testo, non lo schermo piccolo, a mettere davvero alla prova la regola,
+  ed è anche lo scenario che WCAG 1.4.4 nomina.
 - l'invito porta a `/it/fotografie` e a `/en/photographs`;
 - il footer non è nella home ed è presente su galleria, progetti, about e 404;
 - axe senza violazioni sulla home nei due temi.

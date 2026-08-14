@@ -23,16 +23,29 @@ test('la home non scorre su telefono', async ({ page }) => {
 })
 
 /**
- * L eccezione, e il motivo per cui esiste questo test: su uno schermo troppo
- * basso il contenuto non ci sta. La pagina deve **scorrere**, non tagliare:
- * WCAG 1.4.4 chiede che il testo possa raddoppiare senza perdere contenuto.
+ * L eccezione, e il motivo per cui questo test esiste: WCAG 1.4.4 chiede che
+ * il testo possa raddoppiare senza perdere contenuto. Coi caratteri al 200%
+ * il contenuto non ci sta piu, e la pagina deve **scorrere**, non tagliare.
  * Senza questo test, un `overflow: hidden` farebbe passare gli altri due.
+ *
+ * **Misurato il 14 agosto 2026.** Una prova basata sul solo schermo basso non
+ * serviva: a 640x340, con l introduzione vera, il contenuto misura 212px e ci
+ * sta comodamente — la soglia reale e a 211px di altezza, che nessun telefono
+ * ha. E l ingrandimento del testo, non lo schermo piccolo, a mettere davvero
+ * alla prova la regola.
  */
-test('su uno schermo basso la home scorre invece di tagliare', async ({ page }) => {
-  await page.setViewportSize({ width: 640, height: 340 })
+test('coi caratteri al 200% la home scorre invece di tagliare', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/it')
 
-  expect(await scorre(page)).toBe(true)
+  // 32px su una radice da 16px: il raddoppio che le linee guida chiedono.
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = '32px'
+  })
+
+  // `poll` e non un assert secco: il riflusso dopo il cambio di dimensione non
+  // e istantaneo, e un confronto immediato misurerebbe il layout di prima.
+  await expect.poll(() => scorre(page)).toBe(true)
 
   // L introduzione resta raggiungibile: e cio che si sarebbe perso tagliando.
   const intro = page.getByTestId('home-intro')

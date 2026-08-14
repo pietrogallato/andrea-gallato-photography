@@ -145,7 +145,7 @@ Atteso: **sei fallimenti su sei.**
 |---|---|
 | non scorre su desktop | il footer aggiunge altezza |
 | non scorre su telefono | stessa causa |
-| su schermo basso scorre | `home-intro` non esiste ancora (Task 3) |
+| coi caratteri al 200% scorre | `home-intro` non esiste ancora (Task 3) |
 | footer assente nella home | il footer e ancora nel layout |
 | l'invito porta alla galleria | il collegamento non esiste |
 | l'invito e raggiungibile | stessa causa |
@@ -647,7 +647,7 @@ git commit -m "Ritocchi dopo la verifica visiva della home statica"
 ## Criteri di completamento
 
 1. Sulla home, a 1280×800 e a 390×844, l'altezza del documento non supera quella della finestra.
-2. A 640×340 la home scorre e l'introduzione resta raggiungibile.
+2. Coi caratteri al 200% la home scorre e l'introduzione resta raggiungibile.
 3. Il footer non compare nella home e compare su galleria, progetti, about e 404.
 4. Il collegamento porta a `/it/fotografie` e a `/en/photographs` con l'etichetta della lingua giusta.
 5. Zero violazioni axe sulla home nei due temi.
