@@ -11,7 +11,7 @@ La prima versione deve:
 
 - presentare fotografie singole e progetti fotografici;
 - permettere a una fotografia di esistere autonomamente e, facoltativamente, appartenere a uno o più progetti;
-- offrire un'esperienza scura e cinematografica, con tema chiaro opzionale;
+- offrire un'esperienza scura e cinematografica;
 - essere disponibile in italiano e inglese;
 - consentire la gestione autonoma dei contenuti attraverso Sanity Studio;
 - mantenere buone prestazioni con un catalogo indicativo compreso tra 100 e 500 fotografie.
@@ -44,7 +44,7 @@ Sanity fornirà:
 
 Non sono previsti un database applicativo, un backend separato o un sistema di autenticazione personalizzato. L'accesso a `/studio` userà l'autenticazione Sanity e i due editor avranno credenziali separate.
 
-Il frontend userà prevalentemente Server Components. I Client Components saranno limitati alle interazioni che ne hanno bisogno: cambio tema, selettore lingua, galleria incrementale e lightbox.
+Il frontend userà prevalentemente Server Components. I Client Components saranno limitati alle interazioni che ne hanno bisogno: selettore lingua, galleria incrementale e lightbox.
 
 ## 4. Flusso dei dati
 
@@ -152,7 +152,9 @@ Ogni pagina pubblica include canonical, alternate `hreflang`, metadati localizza
 
 ## 7. Direzione visiva
 
-L'identità è scura e cinematografica, ma sobria. Il tema scuro è il valore iniziale alla prima visita; un interruttore permette di passare al tema chiaro e la preferenza viene memorizzata nel browser senza lampeggiamento del tema sbagliato al caricamento.
+L'identità è scura e cinematografica, ma sobria. **Il tema scuro è l'unico.**
+
+*Deciso il 14 agosto 2026.* Il sito nasceva con un interruttore per passare al tema chiaro e una preferenza memorizzata nel browser. È stato rimosso: su un portfolio fotografico il fondo scuro non è una preferenza fra due, è il modo in cui le fotografie vanno guardate, e un tema chiaro che nessuno usa costa comunque una seconda palette da tenere in contrasto, uno script anti-lampeggio nel `<head>` e ogni pagina scansionata due volte dai test di accessibilità.
 
 Principi:
 

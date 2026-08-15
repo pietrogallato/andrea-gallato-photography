@@ -8,7 +8,6 @@ export const en: Dictionary = {
   navAbout: 'About',
   openMenu: 'Open menu',
   closeMenu: 'Close menu',
-  themeToggle: 'Light theme',
   localeGroup: 'Language',
   localeNameIt: 'Italiano',
   localeNameEn: 'English',

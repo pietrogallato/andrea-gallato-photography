@@ -24,10 +24,9 @@ describe('Header', () => {
     expect(screen.getByRole('link', { name: 'Andrea Gallato' })).toHaveAttribute('href', '/en')
   })
 
-  it('contiene il selettore lingua e l interruttore tema', () => {
+  it('contiene il selettore lingua', () => {
     render(<Header locale="it" siteName="Andrea Gallato" />)
     expect(screen.getByRole('navigation', { name: 'Lingua' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Tema chiaro' })).toBeInTheDocument()
   })
 
   it('linka Fotografie, Progetti e About', () => {

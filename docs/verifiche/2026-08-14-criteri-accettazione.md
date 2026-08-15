@@ -31,8 +31,8 @@ titolo italiano compare marcato `lang="it"`.
 
 **4. Tema scuro predefinito, chiaro opzionale, senza flash, con memoria.**
 
-**Provato** dagli end-to-end: parte scuro, passa a chiaro, ricorda dopo un
-ricaricamento senza flash e mantiene la scelta navigando.
+**Decaduto il 14 agosto 2026.** Il tema chiaro è stato rimosso: ne resta uno solo,
+scuro, quindi non c'è più una scelta da ricordare né un lampeggio da evitare.
 
 **5. Lightbox usabile con mouse, tastiera e touch; mostra solo titolo, anno e
 luogo quando ci sono.**

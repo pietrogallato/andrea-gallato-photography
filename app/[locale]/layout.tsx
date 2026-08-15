@@ -3,10 +3,8 @@ import { notFound } from 'next/navigation'
 import { LOCALES, DEFAULT_LOCALE, isLocale } from '@/lib/i18n/locales'
 import { getDictionary } from '@/lib/i18n/dictionaries'
 import { pickLocalized } from '@/lib/i18n/localize'
-import { THEME_SCRIPT, DEFAULT_THEME } from '@/lib/theme/script'
 import { display, sans } from '@/lib/fonts'
 import { siteUrl } from '@/lib/siteUrl'
-import { ThemeScript } from '@/components/theme/ThemeScript'
 import { SkipLink } from '@/components/layout/SkipLink'
 import { Header } from '@/components/layout/Header'
 import { sanityFetch } from '@/lib/sanity/fetch'
@@ -67,14 +65,9 @@ export default async function LocaleLayout({
   return (
     <html
       lang={locale}
-      data-theme={DEFAULT_THEME}
       data-scroll-behavior="smooth"
       className={`${display.variable} ${sans.variable}`}
-      suppressHydrationWarning
     >
-      <head>
-        <ThemeScript source={THEME_SCRIPT} />
-      </head>
       <body>
         <SkipLink label={dict.skipToContent} />
         <Header locale={locale} siteName={siteName} />

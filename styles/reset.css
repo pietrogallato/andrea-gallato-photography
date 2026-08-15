@@ -28,8 +28,8 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  transition: background-color var(--duration-slow) var(--ease),
-    color var(--duration-slow) var(--ease);
+  /* Qui c era una transizione di 700ms su sfondo e testo: serviva a rendere
+     morbido il cambio di tema. Con un tema solo non ha piu nulla da animare. */
 }
 
 img,

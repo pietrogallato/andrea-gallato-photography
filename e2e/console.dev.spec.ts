@@ -77,18 +77,3 @@ test('la galleria e la lightbox non producono errori di console', async ({ page 
 
   expect(problemi).toEqual([])
 })
-
-test('il cambio di tema non produce errori di console', async ({ page }) => {
-  const problemi = raccogliProblemi(page)
-
-  await page.goto('/it')
-  await page.getByRole('button', { name: 'Tema chiaro' }).click()
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
-  await page.reload()
-  await page.waitForTimeout(800)
-
-  // Lo script inline modifica il DOM prima dell idratazione: senza
-  // suppressHydrationWarning sull elemento html, React lo segnalerebbe qui.
-  expect(problemi).toEqual([])
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
-})

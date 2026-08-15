@@ -1,6 +1,6 @@
-:root,
-[data-theme='dark'],
-.surface-dark {
+/* Un tema solo. `color-scheme: dark` non e decorativo: dice al browser di
+   disegnare scure anche le barre di scorrimento e i controlli nativi. */
+:root {
   color-scheme: dark;
 
   --bg: #08080a;
@@ -10,21 +10,7 @@
   --border: #232327;
   --focus-ring: #7fb2ff;
   --scrim: 8, 8, 10;
-}
 
-[data-theme='light'] {
-  color-scheme: light;
-
-  --bg: #faf8f5;
-  --bg-elevated: #ffffff;
-  --fg: #131316;
-  --fg-muted: #56545a;
-  --border: #ddd8d1;
-  --focus-ring: #1a56c4;
-  --scrim: 250, 248, 245;
-}
-
-:root {
   /* --font-display e --font-sans-loaded sono iniettati da next/font sul tag
      html. Il ripiego copre il primo paint e il caso in cui il font non arrivi. */
   --font-display: 'Bodoni Moda', ui-serif, Georgia, 'Times New Roman', serif;

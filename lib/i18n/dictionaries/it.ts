@@ -6,7 +6,6 @@ export const it = {
   navAbout: 'About',
   openMenu: 'Apri il menu',
   closeMenu: 'Chiudi il menu',
-  themeToggle: 'Tema chiaro',
   localeGroup: 'Lingua',
   localeNameIt: 'Italiano',
   localeNameEn: 'English',

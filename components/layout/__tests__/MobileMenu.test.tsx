@@ -50,14 +50,13 @@ describe('MobileMenu', () => {
 
     expect(screen.getByRole('link', { name: dict.navGallery })).toHaveAttribute('href', '/it/fotografie')
   })
-  it('ospita anche lingua e tema, che sotto il breakpoint escono dall header', async () => {
+  it('ospita il selettore lingua, che sotto il breakpoint esce dall header', async () => {
     render(<MobileMenu {...props} />)
     await userEvent.click(screen.getByRole('button', { name: dict.openMenu }))
 
-    // Nome, selettore lingua e interruttore tema su una riga sola sfondavano
-    // il viewport a 390px; comprimerli avrebbe ridotto le aree di tocco sotto
-    // il minimo di 44px. Vivono quindi nel pannello.
+    // Nome e selettore lingua su una riga sola sfondavano il viewport a 390px;
+    // comprimerli avrebbe ridotto le aree di tocco sotto il minimo di 44px.
+    // Il selettore vive quindi nel pannello.
     expect(screen.getByRole('navigation', { name: dict.localeGroup })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: dict.themeToggle })).toBeInTheDocument()
   })
 })

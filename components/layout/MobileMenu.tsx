@@ -4,7 +4,6 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { Locale } from '@/lib/i18n/locales'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
 import { LocaleNav } from '@/components/controls/LocaleNav'
-import { ThemeToggle } from '@/components/controls/ThemeToggle'
 import { PrimaryNav } from './PrimaryNav'
 import styles from './MobileMenu.module.css'
 
@@ -61,7 +60,6 @@ export function MobileMenu({
 
         <div className={styles.controls}>
           <LocaleNav current={locale} groupLabel={dict.localeGroup} names={localeNames} />
-          <ThemeToggle label={dict.themeToggle} />
         </div>
       </div>
     </div>

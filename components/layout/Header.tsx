@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { type Locale } from '@/lib/i18n/locales'
 import { getDictionary } from '@/lib/i18n/dictionaries'
 import { pathFor } from '@/lib/i18n/routes'
-import { ThemeToggle } from '@/components/controls/ThemeToggle'
 import { LocaleNav } from '@/components/controls/LocaleNav'
 import { MobileMenu } from './MobileMenu'
 import { PrimaryNav } from './PrimaryNav'
@@ -27,10 +26,9 @@ export function Header({ locale, siteName }: { locale: Locale; siteName: string 
 
       <div className={styles.controls}>
         <LocaleNav current={locale} groupLabel={dict.localeGroup} names={localeNames} />
-        <ThemeToggle label={dict.themeToggle} />
       </div>
 
-      {/* Sotto il breakpoint i controlli vivono qui: nome, lingua e tema su una
+      {/* Sotto il breakpoint il selettore lingua vive qui: nome e lingua su una
           riga sola sfondavano il viewport, e comprimerli avrebbe reso le aree
           di tocco piu piccole del minimo di 44px. */}
       <div className={styles.menu}>

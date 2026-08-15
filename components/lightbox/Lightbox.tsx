@@ -75,7 +75,7 @@ export function Lightbox({
   return (
     <dialog
       ref={ref}
-      className={`${styles.dialog} surface-dark`}
+      className={styles.dialog}
       aria-label={label}
       // onCancel, non onClose. `cancel` scatta solo su una richiesta di
       // chiusura dell utente (Esc); `close` scatta per qualunque chiusura,

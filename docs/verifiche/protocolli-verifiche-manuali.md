@@ -69,11 +69,6 @@ un'informazione inutile, e un annuncio giusto al momento sbagliato è rumore.
 
 Con VoiceOver (macOS: `cmd + F5`) o NVDA, provare:
 
-**L'interruttore del tema.** Il nome accessibile non cambia con lo stato — è
-sempre «Tema chiaro» — mentre `aria-pressed` dice se è attivo. Ascoltare che
-l'annuncio non risulti contraddittorio: il difetto tipico è un pulsante che si
-chiama «Tema chiaro» e si annuncia «premuto» quando il tema chiaro è spento.
-
 **La lightbox.** Deve annunciarsi come finestra modale, e il contenuto sotto
 non deve essere raggiungibile continuando a tabulare. Aprire una fotografia e
 provare a raggiungere l'header: se ci si arriva, la modale non sta trattenendo

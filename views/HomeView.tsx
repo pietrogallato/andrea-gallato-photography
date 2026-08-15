@@ -35,7 +35,7 @@ export async function HomeView({
   }
 
   return (
-    <section className={`${styles.hero} surface-dark`}>
+    <section className={styles.hero}>
       <SanityImage
         photo={{
           url: hero.url,

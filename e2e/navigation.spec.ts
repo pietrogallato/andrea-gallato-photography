@@ -1,9 +1,9 @@
 import { test, expect, nuovoContesto } from './fixtures'
 
 /**
- * Sotto il breakpoint mobile lingua e tema non stanno nell header: vivono nel
- * pannello del menu, perche su una riga sola sfondavano il viewport. I test
- * che li usano devono quindi aprirlo prima.
+ * Sotto il breakpoint mobile il selettore lingua non sta nell header: vive nel
+ * pannello del menu, perche su una riga sola sfondava il viewport. I test che
+ * lo usano devono quindi aprirlo prima.
  */
 async function apriControlli(page: import('@playwright/test').Page, isMobile?: boolean) {
   if (!isMobile) return

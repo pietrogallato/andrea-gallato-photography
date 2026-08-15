@@ -92,11 +92,6 @@ describe('Lightbox', () => {
     expect(screen.getByRole('button', { name: dict.lightboxClose })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: dict.lightboxNext })).toBeInTheDocument()
   })
-
-  it('applica la superficie scura indipendentemente dal tema del sito', () => {
-    setup(0)
-    expect(screen.getByRole('dialog').className).toMatch(/surface-dark/)
-  })
 })
 
 /**
