@@ -44,17 +44,53 @@
   touch-action: pan-y pinch-zoom;
 }
 
+/* La superficie e cio che si misura, cio che riceve i gesti e cio che porta le
+   variabili dell ingrandimento. Il ritaglio invece resta al contenitore di
+   SanityImage, che ha gia overflow: hidden e il rapporto giusto. */
+.superficie {
+  width: min(100%, calc(78dvh * var(--ar)));
+  max-height: 78dvh;
+  /* `none` solo qui: la pizzicata su questa superficie e nostra. Su didascalia,
+     pulsanti e margini resta quella del browser, che ingrandisce la pagina ed e
+     il modo con cui chi ci vede poco legge una didascalia piccola (WCAG 1.4.4).
+     Il perimetro e la ragione per cui la deroga e accettabile. */
+  touch-action: none;
+}
+
+.superficie:active {
+  cursor: grabbing;
+}
+
 /* Il contenitore di SanityImage contiene solo un immagine in posizione
    assoluta, quindi non ha larghezza intrinseca: dentro un grid centrato
    collasserebbe a zero, e con esso l altezza derivata da aspect-ratio.
-   La larghezza va quindi derivata dal rapporto e dall altezza massima. */
+   Riempie la superficie, che la larghezza ce l ha. */
 .image {
-  width: min(100%, calc(78dvh * var(--ar)));
-  max-height: 78dvh;
+  width: 100%;
   /* La fotografia sale di poco entrando: il movimento e appena percettibile
      ma toglie alla lightbox l aria di finestra che compare di colpo. */
   animation: reveal var(--duration-slow) var(--ease-out) both;
   animation-delay: 40ms;
+}
+
+/* L ingrandimento vive qui, sull immagine, e non sul contenitore: quello ha
+   l animazione d entrata con fill-mode `both`, che tiene sequestrata la
+   proprieta transform. **Misurato in Chromium 148:** uno scale() inline su
+   quell elemento da una computed transform pari all identita, cioe non entra
+   mai in vigore.
+
+   Una transizione CSS, non un animazione in JavaScript: la regola globale di
+   prefers-reduced-motion azzera le durate CSS, e non saprebbe fermare un
+   requestAnimationFrame. */
+.superficie img {
+  transform: translate(var(--pan-x, 0px), var(--pan-y, 0px)) scale(var(--zoom, 1));
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+/* Durante il gesto la transizione va tolta, altrimenti l immagine insegue il
+   dito con un ritardo costante e sembra scollata. */
+.superficie[data-gesto='true'] img {
+  transition: none;
 }
 
 .close,
@@ -157,4 +193,49 @@
     transform: none;
     background: var(--fg-muted);
   }
+}
+
+.zoom {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  display: flex;
+  gap: var(--space-2);
+  z-index: 2;
+}
+
+.zoomButton {
+  display: grid;
+  place-items: center;
+  /* Stessa area minima dei tre pulsanti gia presenti: un bersaglio piu piccolo
+     accanto a tre che rispettano il minimo e una incoerenza visibile prima
+     ancora che un problema di accessibilita. */
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  color: var(--fg-muted);
+  background: color-mix(in oklab, var(--bg) 72%, transparent);
+  border-radius: var(--radius);
+  transition: color var(--duration-fast) var(--ease);
+}
+
+.zoomButton:hover {
+  color: var(--fg);
+}
+
+.zoomButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  color: var(--fg);
+}
+
+.zoomButton:disabled {
+  opacity: 0.2;
+  cursor: default;
+}
+
+/* La seconda barra: identica a vedersi a quella dell attesa, ma guidata da uno
+   stato suo. Riusare quello dell attesa dichiarerebbe occupata, con aria-busy,
+   una fotografia che si sta guardando benissimo. */
+.loaderZoom {
+  composes: loader;
 }
