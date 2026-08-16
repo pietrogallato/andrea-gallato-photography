@@ -74,23 +74,41 @@ export function useZoom({
     massimoChiesto.current = 0
   }, [id, sizesDiRiposo])
 
-  // Il tetto dipende da quanto grande viene dipinta la fotografia, che cambia
-  // col ridimensionamento della finestra.
+  // Il tetto dipende da quanto grande viene dipinta la fotografia, e la misura
+  // cambia sotto i piedi: la finestra si ridimensiona, ma soprattutto il
+  // riquadro nasce a zero dentro un dialog chiuso e prende corpo solo quando
+  // viene aperto. Nessun evento della finestra racconta quel momento, per
+  // questo si guarda l'elemento e non `resize`: altrimenti la prima e unica
+  // misura sarebbe quella degenere e il tetto resterebbe per sempre il minimo
+  // di ripiego.
   useEffect(() => {
+    const el = riquadroRef.current
     function ricalcola() {
       const r = misura()
-      setTetto(
-        tettoDiIngrandimento({
-          url,
-          larghezzaDipintaCss: r?.larghezza ?? 0,
-          dpr: window.devicePixelRatio || 1,
-        }),
-      )
+      const nuovoTetto = tettoDiIngrandimento({
+        url,
+        larghezzaDipintaCss: r?.larghezza ?? 0,
+        dpr: window.devicePixelRatio || 1,
+      })
+      setTetto(nuovoTetto)
+      if (!r) return
+      // Un riquadro nuovo rimette in discussione le due invarianti: il livello
+      // puo essere rimasto sopra il tetto appena sceso, e lo spostamento fuori
+      // dai bordi appena stretti. La vista uguale si restituisce identica,
+      // perche un oggetto nuovo a ogni misura farebbe rendere all'infinito.
+      setVista((v) => {
+        const nuova = applica(v, v.livello, undefined, r, nuovoTetto)
+        return nuova.livello === v.livello && nuova.pan.x === v.pan.x && nuova.pan.y === v.pan.y
+          ? v
+          : nuova
+      })
     }
     ricalcola()
-    window.addEventListener('resize', ricalcola)
-    return () => window.removeEventListener('resize', ricalcola)
-  }, [url, misura])
+    if (!el) return
+    const osservatore = new ResizeObserver(ricalcola)
+    osservatore.observe(el)
+    return () => osservatore.disconnect()
+  }, [url, misura, riquadroRef])
 
   /**
    * Il calcolo di una nuova vista, fuori da React perche non dipenda da nulla
@@ -219,6 +237,11 @@ export function useZoom({
       vivo = false
       clearTimeout(avvio)
       clearTimeout(barra)
+      // L'indicatore va spento qui e non solo nel `finally`: se si torna a
+      // riposo mentre la decodifica e ancora in volo, quel `finally` arriva a
+      // effetto gia morto e il ramo che spegne non viene percorso. Resterebbe
+      // la rotella accesa sopra una fotografia ferma.
+      setAttesa(false)
     }
   }, [vista.livello, url, misura])
 
