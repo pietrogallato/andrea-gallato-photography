@@ -117,6 +117,53 @@ describe('useGestiZoom', () => {
   })
 
   /**
+   * Il gesto piu frequente dentro una fotografia ingrandita e il trascinamento,
+   * e si fa a piccoli colpi: si sposta un po', si alza il dito, si riparte. Se
+   * ogni rilascio conta come tocco, due aggiustamenti ravvicinati diventano un
+   * doppio tocco e l'ingrandimento appena scelto viene buttato via mentre si
+   * stava solo cercando l'inquadratura.
+   */
+  it('due micro trascinamenti ravvicinati non valgono un doppio tocco', () => {
+    const { el, result } = monta()
+    act(() => result.current.zoom.versoLivello(3))
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 420, y: 300, tempo: 1040 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 420, y: 300, tempo: 1060 }))
+    })
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 2, x: 420, y: 300, tempo: 1120 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 2, x: 435, y: 300, tempo: 1140 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 2, x: 435, y: 300, tempo: 1150 }))
+    })
+
+    expect(result.current.zoom.livello).toBe(3)
+  })
+
+  /**
+   * L'altro verso dello stesso difetto: un trascinamento lungo non puo fare da
+   * primo tempo di un doppio tocco. Chi finisce di spostare la vista e poi
+   * appoggia il dito per fermarsi si vedrebbe tornare a schermo intero.
+   */
+  it('un trascinamento lungo non fa da primo tempo di un doppio tocco', () => {
+    const { el, result } = monta()
+    act(() => result.current.zoom.versoLivello(3))
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 100, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 600, y: 300, tempo: 1100 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 600, y: 300, tempo: 1120 }))
+    })
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 2, x: 600, y: 300, tempo: 1170 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 2, x: 600, y: 300, tempo: 1180 }))
+    })
+
+    expect(result.current.zoom.livello).toBe(3)
+  })
+
+  /**
    * La pizzicata da trackpad e la strada principale su desktop, e arriva come
    * una raffica di eventi wheel. Se ogni evento leggesse il livello dal render
    * precedente, i colpi consegnati prima che React abbia ridipinto

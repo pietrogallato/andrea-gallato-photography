@@ -9,6 +9,19 @@ const DOPPIO_MS = 300
 const DOPPIO_PX = 30
 
 /**
+ * Quanto puo scivolare un dito perche il suo rilascio conti ancora come tocco.
+ *
+ * Serve una soglia propria, piu stretta di DOPPIO_PX: dentro una fotografia
+ * ingrandita si aggiusta l'inquadratura a colpetti brevi, e con 30px un
+ * trascinamento da 20px passerebbe ancora per tocco — due colpetti di fila
+ * varrebbero un doppio tocco e butterebbero via l'ingrandimento appena scelto,
+ * che e il gesto piu frequente su telefono. 10px e la tolleranza che i browser
+ * usano per distinguere un tocco da un trascinamento (il touch slop di Android
+ * e 8dp): sotto ci sta il tremolio del dito, sopra c e un'intenzione.
+ */
+const TOCCO_FERMO_PX = 10
+
+/**
  * Quanto la rotella ingrandisce.
  *
  * L'esponenziale rende il gesto uniforme: la stessa rotazione moltiplica
@@ -61,6 +74,13 @@ export function useGestiZoom({
     if (!el) return
 
     const puntatori = new Map<number, Punto>()
+    /**
+     * Dove ogni dito ha toccato. `puntatori` insegue la posizione corrente e
+     * quella di partenza si perde al primo movimento: senza ricordarla non si
+     * puo sapere se il dito che si alza si era spostato, cioe se quel rilascio
+     * chiude un tocco o un trascinamento.
+     */
+    const partenze = new Map<number, Punto>()
     let distanzaIniziale = 0
     let livelloIniziale = 1
     let ultimo: Punto | null = null
@@ -97,6 +117,7 @@ export function useGestiZoom({
 
     function giu(event: PointerEvent) {
       puntatori.set(event.pointerId, { x: event.clientX, y: event.clientY })
+      partenze.set(event.pointerId, { x: event.clientX, y: event.clientY })
       el!.setPointerCapture(event.pointerId)
 
       if (puntatori.size === 2) {
@@ -136,10 +157,21 @@ export function useGestiZoom({
       const vicino =
         Math.abs(event.clientX - ultimoTocco.x) < DOPPIO_PX &&
         Math.abs(event.clientY - ultimoTocco.y) < DOPPIO_PX
-      if (pizzicata) {
-        // Le dita che si alzano dopo una pizzicata non sono tocchi: ne l una
-        // ne l altra, quindi nemmeno la prima puo fare da primo tempo di un
-        // doppio tocco con quella che resta.
+      const partenza = partenze.get(event.pointerId)
+      partenze.delete(event.pointerId)
+      // Un trascinamento non e un tocco. Il confronto e fra dove il dito e
+      // sceso e dove si alza, non fra due rilasci: guardando solo i rilasci,
+      // due aggiustamenti dell'inquadratura finiscono vicini e ravvicinati nel
+      // tempo, ed e esattamente la firma di un doppio tocco.
+      const trascinato =
+        !partenza ||
+        Math.abs(event.clientX - partenza.x) >= TOCCO_FERMO_PX ||
+        Math.abs(event.clientY - partenza.y) >= TOCCO_FERMO_PX
+      if (pizzicata || trascinato) {
+        // Ne le dita che si alzano dopo una pizzicata ne quelle che hanno
+        // trascinato sono tocchi. E non basta ignorarle: vanno anche
+        // dimenticate, altrimenti resterebbero buone come primo tempo di un
+        // doppio tocco con il rilascio successivo.
         ultimoTocco = { tempo: 0, x: 0, y: 0 }
       } else if (puntatori.size === 1 && ora - ultimoTocco.tempo < DOPPIO_MS && vicino) {
         zoomRef.current.alDoppioTocco(relativo(event.clientX, event.clientY))
