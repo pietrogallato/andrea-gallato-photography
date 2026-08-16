@@ -1,5 +1,6 @@
 'use client'
 
+import { useLayoutEffect, useRef } from 'react'
 import type { Dictionary } from '@/lib/i18n/dictionaries'
 import styles from './Lightbox.module.css'
 
@@ -26,6 +27,42 @@ export function ZoomControls({
   onRiduci: () => void
   onAzzera: () => void
 }) {
+  const ingrandisciRef = useRef<HTMLButtonElement>(null)
+  const statoPrecedente = useRef(ingrandito)
+
+  /**
+   * Il fuoco che resta orfano quando un comando sparisce.
+   *
+   * Cambiando stato smontano dei comandi: qui «riduci» e «torna a schermo
+   * intero», e nello stesso commit le frecce e la didascalia della lightbox. Se
+   * a smontare e proprio quello che ha il fuoco — e succede sempre, perche e il
+   * comando che si e appena premuto — il fuoco cade sul body e il Tab
+   * successivo, dentro un dialog modale, riparte dal primo comando del dialog,
+   * cioe la chiusura. E la stessa trappola che poco piu sotto si evita al tetto
+   * con `aria-disabled`, e va evitata anche qui: chi torna a schermo intero da
+   * tastiera si troverebbe altrimenti a un tasto dal chiudere per sbaglio la
+   * fotografia che stava guardando, senza che nulla glielo abbia annunciato.
+   *
+   * Si atterra su «ingrandisci» perche e l'unico comando montato in tutti e due
+   * gli stati, quindi il fuoco resta dov'e la mano.
+   *
+   * `useLayoutEffect` e non `useEffect`: il rimedio deve stare nello stesso
+   * fotogramma dello smontaggio, altrimenti esiste un istante reale in cui il
+   * dialog non ha fuoco e un tasto premuto li dentro va perduto.
+   */
+  useLayoutEffect(() => {
+    const cambiato = statoPrecedente.current !== ingrandito
+    statoPrecedente.current = ingrandito
+    if (!cambiato) return
+    // Solo se non c e piu nulla di focalizzato. Un cambio di stato che arriva
+    // da una pizzicata o dalla rotella non deve strappare il fuoco a un comando
+    // che e rimasto al suo posto: sarebbe uno spostamento non richiesto, e chi
+    // stava per premere «chiudi» se lo troverebbe cambiato sotto le dita.
+    const attivo = document.activeElement
+    if (attivo && attivo !== document.body) return
+    ingrandisciRef.current?.focus()
+  }, [ingrandito])
+
   return (
     <div className={styles.zoom}>
       {ingrandito ? (
@@ -48,6 +85,7 @@ export function ZoomControls({
           abbia annunciato. Con aria-disabled, nella stessa prova, il fuoco
           resta dov'era. */}
       <button
+        ref={ingrandisciRef}
         type="button"
         className={styles.zoomButton}
         onClick={alTetto ? undefined : onIngrandisci}

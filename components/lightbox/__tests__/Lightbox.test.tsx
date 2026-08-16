@@ -315,6 +315,65 @@ describe('Lightbox, ingrandimento', () => {
     expect(screen.queryByRole('button', { name: dict.lightboxZoomReset })).toBeNull()
   })
 
+  /**
+   * Cambiando stato spariscono dei comandi: le frecce quando si ingrandisce,
+   * «riduci» e «torna a schermo intero» quando si torna indietro. Se a sparire
+   * e proprio quello che ha il fuoco, il fuoco finisce sul body e il Tab
+   * successivo, dentro un dialog modale, riparte dal primo comando — che qui e
+   * la chiusura. E lo stesso difetto che il pulsante al tetto evita con
+   * `aria-disabled`: chi naviga da tastiera si ritroverebbe a un tasto dal
+   * chiudere per sbaglio la fotografia che stava guardando, senza un annuncio.
+   * «Ingrandisci» resta montato in tutti e due gli stati, ed e li che il fuoco
+   * deve atterrare.
+   */
+  it('tornando a schermo intero il fuoco non cade sul body', async () => {
+    montaConRiquadro(0)
+    await userEvent.click(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+
+    const torna = screen.getByRole('button', { name: dict.lightboxZoomReset })
+    torna.focus()
+    await userEvent.click(torna)
+
+    expect(torna).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+  })
+
+  it('riducendo fino a schermo intero il fuoco non cade sul body', async () => {
+    montaConRiquadro(0)
+    await userEvent.click(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+
+    const riduci = screen.getByRole('button', { name: dict.lightboxZoomOut })
+    riduci.focus()
+    await userEvent.click(riduci)
+
+    expect(riduci).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+  })
+
+  it('ingrandendo dalla freccia il fuoco non cade sul body', async () => {
+    montaConRiquadro(0)
+    screen.getByRole('button', { name: dict.lightboxNext }).focus()
+    await userEvent.keyboard('+')
+
+    expect(screen.queryByRole('button', { name: dict.lightboxNext })).toBeNull()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+  })
+
+  /**
+   * Il fuoco si sposta solo per rimediare a un comando che e sparito da sotto.
+   * Un gesto sulla fotografia non deve strapparlo a chi lo teneva altrove: chi
+   * sta per premere «chiudi» lo troverebbe cambiato sotto le dita.
+   */
+  it('un gesto non porta via il fuoco a un comando che resta', async () => {
+    montaConRiquadro(0)
+    const chiudi = screen.getByRole('button', { name: dict.lightboxClose })
+    chiudi.focus()
+
+    await userEvent.keyboard('+')
+
+    expect(document.activeElement).toBe(chiudi)
+  })
+
   it('resta una sola regione live, che dice la posizione', async () => {
     montaConRiquadro(0)
     await userEvent.click(screen.getByRole('button', { name: dict.lightboxZoomIn }))
