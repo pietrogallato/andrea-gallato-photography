@@ -220,16 +220,24 @@ export function useZoom({
       img.src = sanityImageLoader({ src: url, width: larghezza })
       img
         .decode()
+        // Solo qui, e non nel `finally`: il srcset va alzato SE il gradino e
+        // arrivato. Alzarlo dopo un fallimento manderebbe next/image a
+        // chiedere dal srcset proprio la larghezza che ha appena fallito, e al
+        // secondo errore SanityImage rimpiazza la fotografia con il riquadro
+        // di ripiego. Chi guardava uno scatto ingrandito si troverebbe una
+        // scatola di testo al suo posto.
+        .then(() => {
+          if (!vivo) return
+          massimoChiesto.current = larghezza
+          setSizes(sizesPerLivello({ larghezzaDipintaCss: riquadro.larghezza, livello: vista.livello }))
+        })
         .catch(() => {
           // Un gradino che non arriva non e un guasto da mostrare: resta a
           // schermo la variante di prima, che e comunque leggibile.
         })
         .finally(() => {
           clearTimeout(barra)
-          if (!vivo) return
-          massimoChiesto.current = larghezza
-          setAttesa(false)
-          setSizes(sizesPerLivello({ larghezzaDipintaCss: riquadro.larghezza, livello: vista.livello }))
+          if (vivo) setAttesa(false)
         })
     }, RIPOSO_MS)
 
@@ -254,6 +262,7 @@ export function useZoom({
     ingrandito: vista.livello > 1,
     alTetto: vista.livello >= tetto,
     versoLivello,
+    perFattore,
     sposta,
     ingrandisci,
     riduci,

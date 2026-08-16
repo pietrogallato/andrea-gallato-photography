@@ -170,6 +170,37 @@ describe('useZoom', () => {
   })
 
   /**
+   * Un gradino che la rete non ha consegnato non deve finire lo stesso
+   * nell'attributo `sizes`. Se ci finisse, next/image chiederebbe dal srcset
+   * proprio la larghezza appena fallita: al secondo errore scatta `onError` e
+   * SanityImage sostituisce la fotografia con il riquadro di ripiego. Chi
+   * stava guardando uno scatto ingrandito si ritroverebbe una scatola di testo.
+   */
+  it('non alza il srcset se il gradino non arriva', async () => {
+    vi.useFakeTimers()
+    class ImmagineRotta {
+      set src(_valore: string) {}
+      decode() {
+        return Promise.reject(new Error('rete'))
+      }
+    }
+    vi.stubGlobal('Image', ImmagineRotta)
+
+    const { result } = renderHook(() =>
+      useZoom({ id: 'a', url: GRANDE, riquadroRef: riquadroFinto(), sizesDiRiposo: '800px' }),
+    )
+    act(() => result.current.versoLivello(2))
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500)
+    })
+
+    expect(result.current.sizes).toBe('800px')
+    // L'indicatore va spento comunque: il fallimento non e un motivo per
+    // lasciare la rotella accesa.
+    expect(result.current.attesa).toBe(false)
+  })
+
+  /**
    * L'indicatore di attesa non deve sopravvivere alla richiesta che lo ha
    * acceso: chi si stanca e torna a schermo intero mentre la rete arranca si
    * ritroverebbe la rotella piantata sopra una fotografia ferma.
