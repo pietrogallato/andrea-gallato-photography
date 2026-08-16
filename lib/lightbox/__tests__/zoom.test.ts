@@ -40,3 +40,34 @@ describe('tettoDiIngrandimento', () => {
     expect(tetto).toBeCloseTo(4)
   })
 })
+
+import { limitaSpostamento } from '../zoom'
+
+describe('limitaSpostamento', () => {
+  const riquadro = { larghezza: 800, altezza: 600 }
+
+  it('a riposo non lascia spostare di un pixel', () => {
+    expect(limitaSpostamento({ pan: { x: 50, y: 50 }, livello: 1, riquadro })).toEqual({ x: 0, y: 0 })
+  })
+
+  it('lascia passare uno spostamento dentro i limiti', () => {
+    // A livello 2 la meta che sborda vale 400 in orizzontale e 300 in verticale.
+    expect(limitaSpostamento({ pan: { x: 120, y: -80 }, livello: 2, riquadro })).toEqual({
+      x: 120,
+      y: -80,
+    })
+  })
+
+  it('taglia lo spostamento che aprirebbe una fessura', () => {
+    expect(limitaSpostamento({ pan: { x: 999, y: -999 }, livello: 2, riquadro })).toEqual({
+      x: 400,
+      y: -300,
+    })
+  })
+
+  it('non si lascia confondere da un riquadro non misurato', () => {
+    expect(
+      limitaSpostamento({ pan: { x: 10, y: 10 }, livello: 3, riquadro: { larghezza: 0, altezza: 0 } }),
+    ).toEqual({ x: 0, y: 0 })
+  })
+})

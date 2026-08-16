@@ -50,3 +50,31 @@ export function tettoDiIngrandimento({
 
   return Math.max(disponibili / dipinta, MOLTIPLICATORE_MINIMO)
 }
+
+function fra(valore: number, minimo: number, massimo: number): number {
+  return Math.min(Math.max(valore, minimo), massimo)
+}
+
+/**
+ * Tiene la fotografia attaccata ai bordi del riquadro.
+ *
+ * Senza questo vincolo si potrebbe trascinare l'immagine fuori scena e restare
+ * a guardare lo sfondo, che e il modo piu rapido di far sembrare rotto un
+ * visualizzatore.
+ */
+export function limitaSpostamento({
+  pan,
+  livello,
+  riquadro,
+}: {
+  pan: Punto
+  livello: number
+  riquadro: Riquadro
+}): Punto {
+  const massimoX = (riquadro.larghezza * (livello - 1)) / 2
+  const massimoY = (riquadro.altezza * (livello - 1)) / 2
+  return {
+    x: fra(pan.x, -massimoX, massimoX),
+    y: fra(pan.y, -massimoY, massimoY),
+  }
+}
