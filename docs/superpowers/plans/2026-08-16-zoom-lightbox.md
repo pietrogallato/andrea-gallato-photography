@@ -497,9 +497,14 @@ e aggiungere in coda:
  * La larghezza da chiedere al CDN per un dato livello, in pixel del
  * dispositivo, gia agganciata alla scala.
  *
- * Serve a costruire l'URL da precaricare. `buildImageUrl` la limitera poi ai
- * pixel nativi dell'asset, quindi chiedere piu del disponibile non spreca
- * banda: torna comunque il file nativo.
+ * Serve a costruire l'URL da precaricare, e quell'URL va costruita con lo
+ * stesso loader che riempie il srcset — `sanityImageLoader` — non con
+ * `buildImageUrl` chiamata a mano: il loader aggiunge la qualita tarata, e
+ * senza quel parametro si precaricherebbe un altro file sotto un'altra chiave
+ * di cache, cioe un precaricamento che non risparmia niente.
+ *
+ * Chiedere piu dei pixel disponibili non spreca banda: la larghezza viene
+ * comunque limitata ai pixel nativi dell'asset e torna il file nativo.
  */
 export function larghezzaDaChiedere({
   larghezzaDipintaCss,
@@ -611,8 +616,9 @@ chiamare un `set` dentro l'updater dell'altro, che in modalita strict React eseg
 
 ```tsx
 // components/lightbox/__tests__/useZoom.test.tsx
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import sanityImageLoader from '@/lib/sanity/imageUrl.loader'
 import { useZoom } from '../useZoom'
 
 const GRANDE = 'https://cdn.sanity.io/images/p/d/abc-4000x2667.jpg'
@@ -630,6 +636,10 @@ function riquadroFinto(larghezza = 800, altezza = 600) {
 
 beforeEach(() => {
   vi.stubGlobal('devicePixelRatio', 1)
+})
+
+afterEach(() => {
+  vi.useRealTimers()
 })
 
 describe('useZoom', () => {
@@ -700,6 +710,39 @@ describe('useZoom', () => {
     expect(result.current.livello).toBe(1)
     expect(result.current.pan).toEqual({ x: 0, y: 0 })
   })
+
+  /**
+   * Il precaricamento vale solo se scarica la STESSA URL che il browser
+   * chiedera dal srcset. Le due nascono in punti diversi del codice — questo
+   * effetto da una parte, next/image dall'altra — e basta un parametro di
+   * scarto perche siano due chiavi di cache: due scaricamenti, e in mezzo
+   * l'istante di sgranato che tutto questo ballo esiste per togliere. Il test
+   * le confronta invece di fidarsi.
+   */
+  it('precarica esattamente l URL che il srcset chiedera', async () => {
+    vi.useFakeTimers()
+    const chiesti: string[] = []
+    class ImmagineFinta {
+      set src(valore: string) {
+        chiesti.push(valore)
+      }
+      decode() {
+        return Promise.resolve()
+      }
+    }
+    vi.stubGlobal('Image', ImmagineFinta)
+
+    const { result } = renderHook(() =>
+      useZoom({ id: 'a', url: GRANDE, riquadroRef: riquadroFinto(), sizesDiRiposo: '800px' }),
+    )
+    act(() => result.current.versoLivello(2))
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500)
+    })
+
+    // 800 CSS x 1 di rapporto x 2 di livello = 1600, un gradino esatto.
+    expect(chiesti).toEqual([sanityImageLoader({ src: GRANDE, width: 1600 })])
+  })
 })
 ```
 
@@ -725,7 +768,7 @@ import {
   type Punto,
   type Riquadro,
 } from '@/lib/lightbox/zoom'
-import { buildImageUrl } from '@/lib/sanity/imageUrl'
+import sanityImageLoader from '@/lib/sanity/imageUrl.loader'
 
 /**
  * Quanto ingrandisce un colpo di `+` o del pulsante.
@@ -907,7 +950,13 @@ export function useZoom({
       barra = setTimeout(() => { if (vivo) setAttesa(true) }, INDICATORE_MS)
 
       const img = new window.Image()
-      img.src = buildImageUrl(url, larghezza)
+      // L'URL passa dallo stesso loader che riempie il srcset, non da
+      // buildImageUrl a mano: il loader aggiunge la qualita tarata, e senza
+      // quel parametro si precaricherebbe un file diverso sotto un'altra
+      // chiave di cache. Il browser, alzato `sizes`, andrebbe comunque in rete
+      // a prendere la variante buona — e il precaricamento avrebbe soltanto
+      // raddoppiato i byte.
+      img.src = sanityImageLoader({ src: url, width: larghezza })
       img
         .decode()
         .catch(() => {
@@ -951,7 +1000,7 @@ export function useZoom({
 - [ ] **Passo 4: eseguire il test e verificare che passi**
 
 Esegui: `npx vitest run components/lightbox/__tests__/useZoom.test.tsx`
-Atteso: PASS, 7 test.
+Atteso: PASS, 8 test.
 
 - [ ] **Passo 5: commit**
 

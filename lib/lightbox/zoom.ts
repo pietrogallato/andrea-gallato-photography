@@ -124,9 +124,14 @@ export function puntoRispettoAlCentro({
  * La larghezza da chiedere al CDN per un dato livello, in pixel del
  * dispositivo, gia agganciata alla scala.
  *
- * Serve a costruire l'URL da precaricare. `buildImageUrl` la limitera poi ai
- * pixel nativi dell'asset, quindi chiedere piu del disponibile non spreca
- * banda: torna comunque il file nativo.
+ * Serve a costruire l'URL da precaricare, e quell'URL va costruita con lo
+ * stesso loader che riempie il srcset — `sanityImageLoader` — non con
+ * `buildImageUrl` chiamata a mano: il loader aggiunge la qualita tarata, e
+ * senza quel parametro si precaricherebbe un altro file sotto un'altra chiave
+ * di cache, cioe un precaricamento che non risparmia niente.
+ *
+ * Chiedere piu dei pixel disponibili non spreca banda: la larghezza viene
+ * comunque limitata ai pixel nativi dell'asset e torna il file nativo.
  */
 export function larghezzaDaChiedere({
   larghezzaDipintaCss,
