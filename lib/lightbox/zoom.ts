@@ -78,3 +78,44 @@ export function limitaSpostamento({
     y: fra(pan.y, -massimoY, massimoY),
   }
 }
+
+/**
+ * Lo spostamento che tiene fermo un punto mentre il livello cambia.
+ *
+ * Senza, la fotografia si ingrandisce sempre verso il centro e chi voleva
+ * guardare un angolo deve inseguirlo trascinando: e la differenza fra uno zoom
+ * che si usa e uno che si combatte.
+ *
+ * `punto` e in coordinate del riquadro rispetto al suo centro.
+ */
+export function spostamentoPerPuntoFisso({
+  punto,
+  livelloVecchio,
+  livelloNuovo,
+  panVecchio,
+}: {
+  punto: Punto
+  livelloVecchio: number
+  livelloNuovo: number
+  panVecchio: Punto
+}): Punto {
+  const rapporto = livelloNuovo / livelloVecchio
+  return {
+    x: punto.x - (punto.x - panVecchio.x) * rapporto,
+    y: punto.y - (punto.y - panVecchio.y) * rapporto,
+  }
+}
+
+/** Dalle coordinate del puntatore a quelle del riquadro, con l'origine al centro. */
+export function puntoRispettoAlCentro({
+  cliente,
+  rettangolo,
+}: {
+  cliente: Punto
+  rettangolo: { left: number; top: number; larghezza: number; altezza: number }
+}): Punto {
+  return {
+    x: cliente.x - (rettangolo.left + rettangolo.larghezza / 2),
+    y: cliente.y - (rettangolo.top + rettangolo.altezza / 2),
+  }
+}

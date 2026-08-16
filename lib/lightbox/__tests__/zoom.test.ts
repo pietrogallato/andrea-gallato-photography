@@ -71,3 +71,71 @@ describe('limitaSpostamento', () => {
     ).toEqual({ x: 0, y: 0 })
   })
 })
+
+import { spostamentoPerPuntoFisso, puntoRispettoAlCentro } from '../zoom'
+
+describe('spostamentoPerPuntoFisso', () => {
+  it('ingrandendo esattamente al centro non sposta nulla', () => {
+    expect(
+      spostamentoPerPuntoFisso({
+        punto: { x: 0, y: 0 },
+        livelloVecchio: 1,
+        livelloNuovo: 2,
+        panVecchio: { x: 0, y: 0 },
+      }),
+    ).toEqual({ x: 0, y: 0 })
+  })
+
+  it('tiene fermo il punto scelto raddoppiando', () => {
+    // Il punto sta 100px a destra del centro. Raddoppiando, la fotografia va
+    // spostata di 100px a sinistra perche quel punto resti sotto il dito.
+    expect(
+      spostamentoPerPuntoFisso({
+        punto: { x: 100, y: 40 },
+        livelloVecchio: 1,
+        livelloNuovo: 2,
+        panVecchio: { x: 0, y: 0 },
+      }),
+    ).toEqual({ x: -100, y: -40 })
+  })
+
+  it('tiene conto dello spostamento gia in essere', () => {
+    expect(
+      spostamentoPerPuntoFisso({
+        punto: { x: 100, y: 0 },
+        livelloVecchio: 2,
+        livelloNuovo: 4,
+        panVecchio: { x: 50, y: 0 },
+      }),
+    ).toEqual({ x: 0, y: 0 })
+  })
+
+  it('e reversibile: tornare al livello di partenza riporta allo spostamento di partenza', () => {
+    const punto = { x: 73, y: -29 }
+    const andata = spostamentoPerPuntoFisso({
+      punto,
+      livelloVecchio: 1,
+      livelloNuovo: 3,
+      panVecchio: { x: 0, y: 0 },
+    })
+    const ritorno = spostamentoPerPuntoFisso({
+      punto,
+      livelloVecchio: 3,
+      livelloNuovo: 1,
+      panVecchio: andata,
+    })
+    expect(ritorno.x).toBeCloseTo(0)
+    expect(ritorno.y).toBeCloseTo(0)
+  })
+})
+
+describe('puntoRispettoAlCentro', () => {
+  it('traduce le coordinate del puntatore in coordinate del riquadro', () => {
+    expect(
+      puntoRispettoAlCentro({
+        cliente: { x: 500, y: 300 },
+        rettangolo: { left: 100, top: 100, larghezza: 800, altezza: 600 },
+      }),
+    ).toEqual({ x: 0, y: -100 })
+  })
+})
