@@ -139,3 +139,28 @@ describe('puntoRispettoAlCentro', () => {
     ).toEqual({ x: 0, y: -100 })
   })
 })
+
+import { larghezzaDaChiedere, sizesPerLivello } from '../zoom'
+
+describe('larghezzaDaChiedere', () => {
+  it('aggancia alla scala delle larghezze, sempre verso l alto', () => {
+    // 480 CSS x 2 di rapporto x 2 di livello = 1920, che e un gradino esatto.
+    expect(larghezzaDaChiedere({ larghezzaDipintaCss: 480, dpr: 2, livello: 2 })).toBe(1920)
+    // 500 x 2 x 1,5 = 1500, che cade fra 1280 e 1600.
+    expect(larghezzaDaChiedere({ larghezzaDipintaCss: 500, dpr: 2, livello: 1.5 })).toBe(1600)
+  })
+
+  it('non supera l ultimo gradino della scala', () => {
+    expect(larghezzaDaChiedere({ larghezzaDipintaCss: 1200, dpr: 3, livello: 4 })).toBe(3840)
+  })
+})
+
+describe('sizesPerLivello', () => {
+  it('dichiara la larghezza in pixel CSS, che il browser moltiplichera da se', () => {
+    expect(sizesPerLivello({ larghezzaDipintaCss: 480, livello: 2 })).toBe('960px')
+  })
+
+  it('arrotonda: una frazione di pixel in un attributo sizes e rumore', () => {
+    expect(sizesPerLivello({ larghezzaDipintaCss: 333.4, livello: 1.5 })).toBe('500px')
+  })
+})

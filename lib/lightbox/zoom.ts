@@ -1,4 +1,4 @@
-import { WIDTH_LADDER, parseAssetDimensions } from '@/lib/sanity/imageUrl'
+import { WIDTH_LADDER, parseAssetDimensions, snapWidth } from '@/lib/sanity/imageUrl'
 
 /**
  * Quanto si concede comunque, anche dove i pixel veri non ci sono.
@@ -118,4 +118,42 @@ export function puntoRispettoAlCentro({
     x: cliente.x - (rettangolo.left + rettangolo.larghezza / 2),
     y: cliente.y - (rettangolo.top + rettangolo.altezza / 2),
   }
+}
+
+/**
+ * La larghezza da chiedere al CDN per un dato livello, in pixel del
+ * dispositivo, gia agganciata alla scala.
+ *
+ * Serve a costruire l'URL da precaricare. `buildImageUrl` la limitera poi ai
+ * pixel nativi dell'asset, quindi chiedere piu del disponibile non spreca
+ * banda: torna comunque il file nativo.
+ */
+export function larghezzaDaChiedere({
+  larghezzaDipintaCss,
+  dpr,
+  livello,
+}: {
+  larghezzaDipintaCss: number
+  dpr: number
+  livello: number
+}): number {
+  return snapWidth(larghezzaDipintaCss * dpr * livello)
+}
+
+/**
+ * L'attributo `sizes` per un dato livello, in pixel CSS.
+ *
+ * Non e la stessa cosa di `larghezzaDaChiedere`: `sizes` e in pixel CSS perche
+ * il browser lo moltiplica lui per il rapporto di pixel prima di scegliere la
+ * variante nel srcset. Passare qui una larghezza in pixel del dispositivo
+ * farebbe scaricare il doppio del necessario su ogni schermo retina.
+ */
+export function sizesPerLivello({
+  larghezzaDipintaCss,
+  livello,
+}: {
+  larghezzaDipintaCss: number
+  livello: number
+}): string {
+  return `${Math.round(larghezzaDipintaCss * livello)}px`
 }
