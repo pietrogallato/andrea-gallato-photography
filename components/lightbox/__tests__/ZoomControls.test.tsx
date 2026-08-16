@@ -36,10 +36,23 @@ describe('ZoomControls', () => {
     expect(screen.getByRole('button', { name: dict.lightboxZoomReset })).toBeInTheDocument()
   })
 
-  it('al tetto il comando per ingrandire e disabilitato', () => {
-    // E' cosi che ci si accorge di essere arrivati: non c e alcun annuncio.
-    monta({ ingrandito: true, alTetto: true })
-    expect(screen.getByRole('button', { name: dict.lightboxZoomIn })).toBeDisabled()
+  /**
+   * Al tetto il comando smette di funzionare, ma non sparisce dal giro del
+   * Tab. Un `disabled` vero, premuto da tastiera, butta il fuoco sul body: il
+   * Tab successivo ripartirebbe dal primo comando del dialog, cioe dalla
+   * chiusura, e chi navigava si troverebbe a un tasto dal chiudere per sbaglio
+   * la fotografia che stava guardando.
+   */
+  it('al tetto il comando per ingrandire e inerte ma tiene il fuoco', async () => {
+    const { onIngrandisci } = monta({ ingrandito: true, alTetto: true })
+    const pulsante = screen.getByRole('button', { name: dict.lightboxZoomIn })
+    expect(pulsante).toHaveAttribute('aria-disabled', 'true')
+    expect(pulsante).not.toBeDisabled()
+
+    pulsante.focus()
+    await userEvent.click(pulsante)
+    expect(onIngrandisci).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(pulsante)
   })
 
   it('chiama i comandi giusti', async () => {

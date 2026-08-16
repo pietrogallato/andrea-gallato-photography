@@ -218,7 +218,10 @@
   transition: color var(--duration-fast) var(--ease);
 }
 
-.zoomButton:hover {
+/* Il pulsante spento non si illumina al passaggio: `disabled` lo escludeva da
+   solo, aria-disabled va escluso a mano, altrimenti prometterebbe un comando
+   che non c e piu. */
+.zoomButton:hover:not([aria-disabled='true']) {
   color: var(--fg);
 }
 
@@ -228,7 +231,12 @@
   color: var(--fg);
 }
 
-.zoomButton:disabled {
+/* Al tetto il comando resta un pulsante vero, solo inerte: si spegne con
+   aria-disabled e non con `disabled`, che gli toglierebbe il fuoco sotto le
+   dita di chi lo sta premendo da tastiera. Lo stile spento pero e lo stesso,
+   perche a vedersi il significato non cambia. */
+.zoomButton:disabled,
+.zoomButton[aria-disabled='true'] {
   opacity: 0.2;
   cursor: default;
 }

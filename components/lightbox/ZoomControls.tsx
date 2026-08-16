@@ -37,11 +37,21 @@ export function ZoomControls({
         </button>
       ) : null}
 
+      {/* Al tetto il comando diventa inerte, ma resta nel giro del Tab.
+          `disabled` vero butta via il fuoco di chi lo stava premendo:
+          **misurato in Chromium 151.0.7922.34 il 2026-08-16**, dentro un
+          dialog aperto con showModal(), disabilitare il pulsante che ha il
+          fuoco porta document.activeElement a BODY e il Tab successivo
+          riparte dal primo comando del dialog — da noi la chiusura. Chi arriva
+          al tetto da tastiera si troverebbe cosi a un tasto dal chiudere per
+          sbaglio la fotografia che stava guardando, senza che nulla glielo
+          abbia annunciato. Con aria-disabled, nella stessa prova, il fuoco
+          resta dov'era. */}
       <button
         type="button"
         className={styles.zoomButton}
-        onClick={onIngrandisci}
-        disabled={alTetto}
+        onClick={alTetto ? undefined : onIngrandisci}
+        aria-disabled={alTetto}
       >
         <span className="visually-hidden">{dict.lightboxZoomIn}</span>
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" strokeWidth="1.25">
