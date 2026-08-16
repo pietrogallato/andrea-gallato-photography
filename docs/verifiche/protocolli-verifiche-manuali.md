@@ -1,8 +1,9 @@
-# Le due verifiche che non si automatizzano
+# Le tre verifiche che non si automatizzano
 
 Nessuna suite le sostituisce, ed è il motivo per cui hanno un documento invece
 di una riga in un piano. Servono una persona: una perché richiede l'accesso
-allo Studio, l'altra perché richiede orecchie.
+allo Studio, una perché richiede orecchie, e una perché richiede due dita su un
+telefono vero.
 
 ---
 
@@ -93,3 +94,30 @@ con la fonetica italiana e non letta all'inglese. È il controllo che dice se
 Annotare ogni problema con la pagina, il gesto e ciò che si è sentito. Un
 problema di screen reader descritto come «l'annuncio è strano» non è
 riproducibile, e finirà per non essere corretto.
+
+---
+
+## 3. La pizzicata, su un telefono vero
+
+**Perché non è automatizzabile.** `Touchscreen` di Playwright dichiara di emulare soltanto
+i gesti di tap; il progetto `iphone` gira su WebKit, quindi non c'è un CDP a cui ripiegare;
+e i `TouchEvent` costruiti a mano non generano Pointer Events. Rotella, doppio clic e
+tastiera sono sotto test in `e2e/zoom.spec.ts`. La pizzicata no, e non lo sarà.
+
+Su un telefono, aperta una fotografia in galleria:
+
+1. **pizzicare sulla fotografia** e verificare che si ingrandisca lei, non la pagina;
+2. **trascinare** e verificare che ci si sposti in tutte le direzioni senza che si aprano
+   fessure ai bordi;
+3. **doppio tocco** e verificare che porti al doppio e che un secondo doppio tocco torni
+   a schermo intero;
+4. **pizzicare sulla didascalia**, fuori dalla fotografia, e verificare che lì ingrandisca
+   ancora la pagina: è il perimetro dichiarato, ed è ciò che tiene in piedi WCAG 1.4.4;
+5. **arrivare al tetto** su una fotografia grande e su una da 1080 px, e guardare se
+   l'immagine resta accettabile o si vede sgranata. Se si vede, il minimo garantito di 2×
+   in `lib/lightbox/zoom.ts` va rivisto — annotando la misura.
+
+### Cosa fare dei risultati
+
+Come per le altre due: pagina, gesto e cosa si è visto. «Lo zoom è strano» non è
+riproducibile e finirà per non essere corretto.
