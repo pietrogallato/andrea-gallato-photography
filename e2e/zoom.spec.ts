@@ -105,6 +105,37 @@ test('ingrandendo si chiede un gradino piu grande alla CDN', async ({ page }) =>
   expect(Math.max(...larghezze)).toBeGreaterThan(primaDelloZoom)
 })
 
+/**
+ * Al tetto il comando per ingrandire resta focalizzabile, ed e una scelta: un
+ * `disabled` vero butterebbe sul body il fuoco di chi lo sta premendo da
+ * tastiera. Ma allora non lo si puo spegnere con `opacity` sull elemento
+ * intero, perche quell opacita smorza anche il contorno del fuoco: al 20%
+ * sopra lo sfondo del dialog il contorno #7fb2ff diventa rgb(32,42,59), cioe
+ * 1,4:1 di contrasto, contro i 3:1 che WCAG 1.4.11 chiede a un indicatore di
+ * fuoco. Chi naviga da tastiera arriverebbe qui e non vedrebbe piu dov e.
+ * Lo stato spento si dice con il colore; il contorno resta pieno.
+ *
+ * Axe non lo coglie: non valuta il contrasto degli indicatori di fuoco.
+ */
+test('al tetto il comando spento non smorza il contorno del fuoco', async ({ page }) => {
+  await apriPrima(page)
+  const ingrandisci = page.getByRole('button', { name: 'Ingrandisci la fotografia' })
+
+  // Il livello si ferma al tetto da solo: otto colpi lo superano su qualunque
+  // fotografia del dataset.
+  for (let i = 0; i < 8; i += 1) await page.keyboard.press('+')
+  await expect(ingrandisci).toHaveAttribute('aria-disabled', 'true')
+
+  await expect(ingrandisci).toHaveCSS('opacity', '1')
+  // E resta spento a vedersi: il colore lo dice, altrimenti la correzione
+  // avrebbe solo riacceso un comando che non funziona.
+  const spento = await ingrandisci.evaluate((el) => getComputedStyle(el).color)
+  const acceso = await page
+    .getByRole('button', { name: 'Riduci la fotografia' })
+    .evaluate((el) => getComputedStyle(el).color)
+  expect(spento).not.toBe(acceso)
+})
+
 test('nessuna violazione axe con la fotografia ingrandita', async ({ page }) => {
   await apriPrima(page)
   await page.getByRole('button', { name: 'Ingrandisci la fotografia' }).click()
