@@ -12,17 +12,30 @@ export const FIGURE_PADDING_INLINE_PX = 32
  * fotografia prende, prima quella somma sfonda e la didascalia finisce sotto
  * il bordo, dove il dialog — che ha overflow: hidden — la taglia.
  *
- * **Misurato il 2026-08-17**, spazzando le altezze di viewport a 1280 di
- * larghezza e cercando la prima che non taglia piu la didascalia:
+ * **Rimisurato il 2026-08-17** su build di produzione, spazzando le altezze di
+ * viewport a 1280 di larghezza a passo di 4px e cercando la prima da cui la
+ * didascalia sta tutta dentro e ci resta:
  *
- *     78dvh + padding 64/40   didascalia intera da 516px in su   (com era)
- *     86dvh + padding 24/24   didascalia intera da 524px in su
- *     88dvh + padding 24/24   didascalia intera da 612px in su
+ *     78dvh + padding 64/40   didascalia intera da 520px in su   (com era)
+ *     86dvh + padding 24/24   didascalia intera da 528px in su
+ *     88dvh + padding 24/24   didascalia intera da 616px in su
  *
- * Con 88 le altezze fra 516 e 608 avrebbero cominciato a tagliare una
- * didascalia che oggi si legge. 86 e il valore piu alto che non peggiora
- * nessuno schermo, e sui quattro misurati in produzione (1440x900, 1280x720,
- * 412x915, 390x664) la resa e indistinguibile da 88.
+ * Con 88 le altezze fra 520 e 612 avrebbero cominciato a tagliare una
+ * didascalia che prima si leggeva: novantatre pixel di schermi peggiorati, e
+ * la didascalia ne sarebbe sparita fino a 5,4px, cioe un quinto della riga.
+ *
+ * 86 non e pero il valore piu alto che non peggiora NESSUNO schermo — quello
+ * sarebbe 85. Interpolando le misure, la soglia esatta e 7358 / (100 - dvh),
+ * dove 73,58 sono i pixel fissi sotto la fotografia: 516,3 per la versione di
+ * prima, 525,6 per 86, 613,2 per 88. Fra quelle due prime soglie — altezze di
+ * viewport da 517 a 525 — la didascalia sporge anche con 86, ma di 0,78px al
+ * massimo (misurato a 1280x520; 0,22px a 1280x524). Sotto il pixel, su una
+ * riga alta 26, non e una didascalia tagliata: e un bordo che sfiora il fondo.
+ *
+ * 85 costerebbe quell'1% di altezza su ogni schermo per un pixel che nessuno
+ * vede su nove altezze di viewport. Sui quattro misurati in produzione
+ * (1440x900, 1280x720, 412x915, 390x664) la didascalia e comunque intera con
+ * margine: il piu stretto e 1280x720, dove finisce a 694,4 su 720.
  */
 export const IMAGE_MAX_DVH = 86
 
