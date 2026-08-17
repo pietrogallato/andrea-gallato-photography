@@ -56,23 +56,38 @@ function fra(valore: number, minimo: number, massimo: number): number {
 }
 
 /**
- * Tiene la fotografia attaccata ai bordi del riquadro.
+ * Tiene la fotografia attaccata ai bordi della cornice che la ritaglia.
  *
  * Senza questo vincolo si potrebbe trascinare l'immagine fuori scena e restare
  * a guardare lo sfondo, che e il modo piu rapido di far sembrare rotto un
  * visualizzatore.
+ *
+ * Due riquadri e non uno, perche da ingranditi si separano: `superficie` e cio
+ * che ritaglia — lo schermo intero — e `fotografia` e cio che viene dipinto
+ * dentro, che con un rapporto diverso da quello dello schermo e piu piccola. Il
+ * margine di manovra e quanto la fotografia ingrandita sborda dalla cornice,
+ * per asse. Misurandolo sulla sola fotografia — `lato * (livello - 1) / 2` — a
+ * 1440x900 e livello 1,6 su una quadrata dipinta 900x900 verrebbero 270px in
+ * orizzontale dove la fotografia e larga esattamente quanto lo schermo: 270px
+ * di sfondo trascinabili in scena, cioe proprio il difetto che il vincolo
+ * dovrebbe impedire.
+ *
+ * Il massimo non scende mai sotto zero: finche la fotografia non riempie la
+ * cornice non c'e nulla da spostare, e il nero attorno resta fermo.
  */
 export function limitaSpostamento({
   pan,
   livello,
-  riquadro,
+  fotografia,
+  superficie,
 }: {
   pan: Punto
   livello: number
-  riquadro: Riquadro
+  fotografia: Riquadro
+  superficie: Riquadro
 }): Punto {
-  const massimoX = (riquadro.larghezza * (livello - 1)) / 2
-  const massimoY = (riquadro.altezza * (livello - 1)) / 2
+  const massimoX = Math.max(0, (fotografia.larghezza * livello - superficie.larghezza) / 2)
+  const massimoY = Math.max(0, (fotografia.altezza * livello - superficie.altezza) / 2)
   return {
     x: fra(pan.x, -massimoX, massimoX),
     y: fra(pan.y, -massimoY, massimoY),

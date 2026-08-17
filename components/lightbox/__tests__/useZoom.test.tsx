@@ -32,6 +32,18 @@ function riquadroMutevole(larghezza: number, altezza: number) {
 }
 
 /**
+ * I due riferimenti che useZoom pretende, nel caso in cui coincidono.
+ *
+ * E lo stato a riposo: la cornice che ritaglia ha esattamente la forma della
+ * fotografia. Da ingranditi le due si separano, e quel caso ha i test suoi piu
+ * sotto — sono quelli dove il conto vecchio e quello nuovo danno risposte
+ * diverse.
+ */
+function riquadriCoincidenti(ref = riquadroFinto()) {
+  return { fotografiaRef: ref, superficieRef: ref }
+}
+
+/**
  * Un ResizeObserver pilotabile. Quello vero non esiste in jsdom, e comunque non
  * scatterebbe mai: senza layout nessun riquadro cambia davvero misura. I test
  * devono poter dire «adesso e cambiato» a mano.
@@ -66,7 +78,7 @@ afterEach(() => {
 describe('useZoom', () => {
   it('parte a riposo', () => {
     const { result } = renderHook(() =>
-      useZoom({ id: 'a', url: GRANDE, riquadroRef: riquadroFinto(), sizesDiRiposo: '800px' }),
+      useZoom({ id: 'a', url: GRANDE, ...riquadriCoincidenti(), sizesDiRiposo: '800px' }),
     )
     expect(result.current.livello).toBe(1)
     expect(result.current.pan).toEqual({ x: 0, y: 0 })
@@ -74,7 +86,7 @@ describe('useZoom', () => {
 
   it('ingrandisce e riduce senza superare i limiti', () => {
     const { result } = renderHook(() =>
-      useZoom({ id: 'a', url: GRANDE, riquadroRef: riquadroFinto(), sizesDiRiposo: '800px' }),
+      useZoom({ id: 'a', url: GRANDE, ...riquadriCoincidenti(), sizesDiRiposo: '800px' }),
     )
     act(() => result.current.ingrandisci())
     expect(result.current.livello).toBeGreaterThan(1)
@@ -85,7 +97,7 @@ describe('useZoom', () => {
 
   it('non supera mai il tetto della fotografia', () => {
     const { result } = renderHook(() =>
-      useZoom({ id: 'a', url: GRANDE, riquadroRef: riquadroFinto(), sizesDiRiposo: '800px' }),
+      useZoom({ id: 'a', url: GRANDE, ...riquadriCoincidenti(), sizesDiRiposo: '800px' }),
     )
     act(() => { for (let i = 0; i < 30; i++) result.current.ingrandisci() })
     expect(result.current.livello).toBeCloseTo(result.current.tetto)
@@ -93,7 +105,7 @@ describe('useZoom', () => {
 
   it('a riposo non si sposta', () => {
     const { result } = renderHook(() =>
-      useZoom({ id: 'a', url: GRANDE, riquadroRef: riquadroFinto(), sizesDiRiposo: '800px' }),
+      useZoom({ id: 'a', url: GRANDE, ...riquadriCoincidenti(), sizesDiRiposo: '800px' }),
     )
     act(() => result.current.sposta({ x: 100, y: 100 }))
     expect(result.current.pan).toEqual({ x: 0, y: 0 })
@@ -101,7 +113,7 @@ describe('useZoom', () => {
 
   it('da ingranditi si sposta, entro i bordi', () => {
     const { result } = renderHook(() =>
-      useZoom({ id: 'a', url: GRANDE, riquadroRef: riquadroFinto(), sizesDiRiposo: '800px' }),
+      useZoom({ id: 'a', url: GRANDE, ...riquadriCoincidenti(), sizesDiRiposo: '800px' }),
     )
     act(() => result.current.versoLivello(2))
     act(() => result.current.sposta({ x: 9999, y: 0 }))
@@ -110,7 +122,7 @@ describe('useZoom', () => {
 
   it('il doppio tocco fa da interruttore', () => {
     const { result } = renderHook(() =>
-      useZoom({ id: 'a', url: GRANDE, riquadroRef: riquadroFinto(), sizesDiRiposo: '800px' }),
+      useZoom({ id: 'a', url: GRANDE, ...riquadriCoincidenti(), sizesDiRiposo: '800px' }),
     )
     act(() => result.current.alDoppioTocco({ x: 0, y: 0 }))
     expect(result.current.livello).toBe(2)
@@ -121,7 +133,7 @@ describe('useZoom', () => {
   it('si azzera cambiando fotografia', () => {
     const riquadro = riquadroFinto()
     const { result, rerender } = renderHook(
-      ({ id }) => useZoom({ id, url: GRANDE, riquadroRef: riquadro, sizesDiRiposo: '800px' }),
+      ({ id }) => useZoom({ id, url: GRANDE, ...riquadriCoincidenti(riquadro), sizesDiRiposo: '800px' }),
       { initialProps: { id: 'a' } },
     )
     act(() => result.current.versoLivello(3))
@@ -154,7 +166,7 @@ describe('useZoom', () => {
     vi.stubGlobal('Image', ImmagineFinta)
 
     const { result } = renderHook(() =>
-      useZoom({ id: 'a', url: GRANDE, riquadroRef: riquadroFinto(), sizesDiRiposo: '800px' }),
+      useZoom({ id: 'a', url: GRANDE, ...riquadriCoincidenti(), sizesDiRiposo: '800px' }),
     )
     act(() => result.current.versoLivello(2))
     await act(async () => {
@@ -187,7 +199,7 @@ describe('useZoom', () => {
     vi.stubGlobal('Image', ImmagineRotta)
 
     const { result } = renderHook(() =>
-      useZoom({ id: 'a', url: GRANDE, riquadroRef: riquadroFinto(), sizesDiRiposo: '800px' }),
+      useZoom({ id: 'a', url: GRANDE, ...riquadriCoincidenti(), sizesDiRiposo: '800px' }),
     )
     act(() => result.current.versoLivello(2))
     await act(async () => {
@@ -218,7 +230,7 @@ describe('useZoom', () => {
 
     const riquadro = riquadroFinto()
     const { result } = renderHook(() =>
-      useZoom({ id: 'a', url: GRANDE, riquadroRef: riquadro, sizesDiRiposo: '800px' }),
+      useZoom({ id: 'a', url: GRANDE, ...riquadriCoincidenti(riquadro), sizesDiRiposo: '800px' }),
     )
     act(() => result.current.versoLivello(2))
     await act(async () => {
@@ -239,7 +251,7 @@ describe('useZoom', () => {
     const osservatore = osservatorePilotabile()
     const riquadro = riquadroMutevole(800, 600)
     const { result } = renderHook(() =>
-      useZoom({ id: 'a', url: GRANDE, riquadroRef: riquadro.ref, sizesDiRiposo: '800px' }),
+      useZoom({ id: 'a', url: GRANDE, ...riquadriCoincidenti(riquadro.ref), sizesDiRiposo: '800px' }),
     )
     // 3840 pixel disponibili su 800 dipinti: si arriva a 4,8.
     act(() => result.current.versoLivello(4.8))
@@ -257,7 +269,7 @@ describe('useZoom', () => {
     const osservatore = osservatorePilotabile()
     const riquadro = riquadroMutevole(800, 600)
     const { result } = renderHook(() =>
-      useZoom({ id: 'a', url: GRANDE, riquadroRef: riquadro.ref, sizesDiRiposo: '800px' }),
+      useZoom({ id: 'a', url: GRANDE, ...riquadriCoincidenti(riquadro.ref), sizesDiRiposo: '800px' }),
     )
     act(() => result.current.versoLivello(2))
     act(() => result.current.sposta({ x: 9999, y: 0 }))
@@ -280,7 +292,7 @@ describe('useZoom', () => {
     const osservatore = osservatorePilotabile()
     const riquadro = riquadroMutevole(0, 0)
     const { result } = renderHook(() =>
-      useZoom({ id: 'a', url: GRANDE, riquadroRef: riquadro.ref, sizesDiRiposo: '800px' }),
+      useZoom({ id: 'a', url: GRANDE, ...riquadriCoincidenti(riquadro.ref), sizesDiRiposo: '800px' }),
     )
     expect(result.current.tetto).toBe(2)
 
@@ -291,5 +303,94 @@ describe('useZoom', () => {
     expect(result.current.tetto).toBeCloseTo(4.8)
     act(() => result.current.versoLivello(3))
     expect(result.current.livello).toBe(3)
+  })
+
+  /**
+   * Il caso da ingranditi, dove i due riquadri si separano: una quadrata
+   * dipinta 900x900 dentro una cornice 1440x900, cioe un desktop.
+   *
+   * A 1,6x la fotografia e larga 1440 esatti: copre la cornice al pixel, e
+   * spostarla in orizzontale non potrebbe che portare in scena lo sfondo.
+   * In verticale sborda invece di 540, meta per parte.
+   *
+   * Misurando la sola fotografia — `lato * (livello - 1) / 2` — verrebbero
+   * 270px anche in orizzontale: 270px di nero trascinabili, il 19% dello
+   * schermo.
+   */
+  it('da ingranditi ferma lo spostamento dove la fotografia copre la cornice', () => {
+    const fotografia = riquadroMutevole(900, 900)
+    const superficie = riquadroMutevole(1440, 900)
+    const { result } = renderHook(() =>
+      useZoom({
+        id: 'a',
+        url: GRANDE,
+        fotografiaRef: fotografia.ref,
+        superficieRef: superficie.ref,
+        sizesDiRiposo: '900px',
+      }),
+    )
+    act(() => result.current.versoLivello(1.6))
+    act(() => result.current.sposta({ x: 9999, y: 9999 }))
+
+    expect(result.current.pan.x).toBe(0)
+    expect(result.current.pan.y).toBeCloseTo(270)
+  })
+
+  /**
+   * L'altra faccia: sotto il punto in cui la fotografia riempie la cornice non
+   * c'e nulla da spostare. Su un telefono 412x915 una quadrata si dipinge
+   * 412x412 e copre lo schermo solo da 915/412 = 2,22x in su; a 2x il nero
+   * sopra e sotto e fermo, e trascinarlo sarebbe il difetto.
+   */
+  it('non concede spostamento finche la fotografia non riempie la cornice', () => {
+    const fotografia = riquadroMutevole(412, 412)
+    const superficie = riquadroMutevole(412, 915)
+    const { result } = renderHook(() =>
+      useZoom({
+        id: 'a',
+        url: GRANDE,
+        fotografiaRef: fotografia.ref,
+        superficieRef: superficie.ref,
+        sizesDiRiposo: '412px',
+      }),
+    )
+    act(() => result.current.versoLivello(2))
+    act(() => result.current.sposta({ x: 9999, y: 9999 }))
+
+    expect(result.current.pan.y).toBe(0)
+    expect(result.current.pan.x).toBeCloseTo(206)
+  })
+
+  /**
+   * Allargando soltanto la finestra in orizzontale la cornice cresce e la
+   * fotografia — vincolata dall'altezza — resta identica: il margine di
+   * manovra si stringe senza che la fotografia abbia cambiato un pixel.
+   * Osservando la sola fotografia, quel margine resterebbe quello di prima e
+   * si potrebbe trascinare in scena la differenza.
+   */
+  it('rientra nei bordi quando a cambiare e solo la cornice', () => {
+    const osservatore = osservatorePilotabile()
+    const fotografia = riquadroMutevole(900, 900)
+    const superficie = riquadroMutevole(1200, 900)
+    const { result } = renderHook(() =>
+      useZoom({
+        id: 'a',
+        url: GRANDE,
+        fotografiaRef: fotografia.ref,
+        superficieRef: superficie.ref,
+        sizesDiRiposo: '900px',
+      }),
+    )
+    act(() => result.current.versoLivello(2))
+    act(() => result.current.sposta({ x: 9999, y: 0 }))
+    // (900 x 2 - 1200) / 2
+    expect(result.current.pan.x).toBe(300)
+
+    act(() => {
+      superficie.cambia(1600, 900)
+      osservatore.scatta()
+    })
+    // (900 x 2 - 1600) / 2
+    expect(result.current.pan.x).toBe(100)
   })
 })

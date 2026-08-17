@@ -205,6 +205,77 @@ test('espandendo la cornice il tetto si ricalcola', async ({ page }) => {
   expect(arrivo / aRiposo).toBeGreaterThan(tettoDopoLEspansione)
 })
 
+/**
+ * Toglie la transizione sulla fotografia.
+ *
+ * Serve ai due test qui sotto, che misurano il rettangolo trasformato invece
+ * di quello di una scatola ferma: durante i 120ms della transizione quel
+ * rettangolo e a meta strada, e leggerlo darebbe un numero che non esiste in
+ * nessuno stato stabile. Non allenta nulla — lo spostamento e lo stesso, ci si
+ * arriva soltanto subito.
+ */
+async function senzaTransizione(page: import('@playwright/test').Page) {
+  await page.addStyleTag({ content: 'dialog figure img { transition: none !important }' })
+}
+
+/** I bordi della fotografia dipinta, in coordinate dello schermo. */
+async function bordiFotografia(page: import('@playwright/test').Page) {
+  return page.evaluate(() => {
+    const r = (document.querySelector('dialog figure img') as HTMLElement).getBoundingClientRect()
+    return { sinistro: r.left, destro: r.right, alto: r.top, basso: r.bottom }
+  })
+}
+
+/**
+ * L altra meta della cornice espansa, e quella che si sbaglia in silenzio.
+ *
+ * Espandendo il ritaglio fino allo schermo senza toccare il limite dello
+ * spostamento, i due smettono di parlare della stessa cosa: il limite resta
+ * calcolato sui bordi della fotografia mentre a ritagliare e ormai il viewport,
+ * e la differenza — meta della distanza fra i due lati, per asse — e esattamente
+ * quanto sfondo si riesce a trascinare in scena. **Misurato il 2026-08-17** a
+ * 1440x900 prima del rimedio: al tetto, spinto il pan fino in fondo, restavano
+ * 270px di nero fermo lungo il bordo, il 19% dello schermo.
+ *
+ * Si sceglie il tetto perche li la fotografia copre lo schermo a ogni viewport
+ * della suite, telefono compreso: sotto, il nero attorno c e e deve restare
+ * fermo, che e il caso dell altro test.
+ */
+test('spinto fino in fondo, lo spostamento non apre una fessura di sfondo', async ({ page }) => {
+  await apriPrima(page)
+  await senzaTransizione(page)
+  const schermo = page.viewportSize()!
+
+  for (let i = 0; i < 12; i += 1) await page.keyboard.press('+')
+  await expect(page.getByRole('button', { name: 'Ingrandisci la fotografia' })).toHaveAttribute(
+    'aria-disabled',
+    'true',
+  )
+
+  // Al tetto la fotografia copre lo schermo: e la premessa di tutto il resto.
+  const centrata = await bordiFotografia(page)
+  expect(centrata.destro - centrata.sinistro).toBeGreaterThanOrEqual(schermo.width)
+  expect(centrata.basso - centrata.alto).toBeGreaterThanOrEqual(schermo.height)
+
+  // Trenta passi da 60px sono 1800: piu del massimo a qualunque viewport.
+  for (let i = 0; i < 30; i += 1) await page.keyboard.press('ArrowLeft')
+  for (let i = 0; i < 30; i += 1) await page.keyboard.press('ArrowUp')
+
+  // Il bordo si ferma esattamente sul bordo dello schermo: oltre sarebbe
+  // spostamento sprecato, prima sarebbe la fessura. Un pixel di tolleranza per
+  // gli arrotondamenti dei dvh.
+  const spinta = await bordiFotografia(page)
+  expect(Math.abs(spinta.sinistro)).toBeLessThanOrEqual(1)
+  expect(Math.abs(spinta.alto)).toBeLessThanOrEqual(1)
+
+  for (let i = 0; i < 60; i += 1) await page.keyboard.press('ArrowRight')
+  for (let i = 0; i < 60; i += 1) await page.keyboard.press('ArrowDown')
+
+  const opposta = await bordiFotografia(page)
+  expect(Math.abs(opposta.destro - schermo.width)).toBeLessThanOrEqual(1)
+  expect(Math.abs(opposta.basso - schermo.height)).toBeLessThanOrEqual(1)
+})
+
 test('nessuna violazione axe con la fotografia ingrandita', async ({ page }) => {
   await apriPrima(page)
   await page.getByRole('button', { name: 'Ingrandisci la fotografia' }).click()

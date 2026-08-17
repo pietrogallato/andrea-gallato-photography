@@ -333,26 +333,32 @@ describe('Lightbox, ingrandimento', () => {
 
   /**
    * Da ingranditi la superficie diventa lo schermo, ma la fotografia dentro no:
-   * una quadrata su uno schermo largo continua ad avere il nero ai lati. I
-   * limiti dello spostamento vanno presi dalla fotografia, non dalla cornice —
-   * altrimenti si puo trascinare lo scatto fin fuori dai suoi stessi bordi e
-   * restare a guardare lo sfondo, che e il modo piu rapido di far sembrare
-   * rotto un visualizzatore.
+   * una quadrata su uno schermo largo continua ad avere il nero ai lati. Il
+   * limite dello spostamento e quanto la fotografia ingrandita sborda dalla
+   * cornice — se non sborda, spostarla porterebbe in scena lo sfondo, che e il
+   * modo piu rapido di far sembrare rotto un visualizzatore.
    *
-   * Con la cornice 1440 e il livello 1,6 il limite sarebbe 432px; con la
-   * fotografia 900, che e quella dipinta davvero, e 270px.
+   * Cornice 1440x900, fotografia dipinta 900x900, livello 1,6: la fotografia
+   * e larga 1440 esatti, quindi in orizzontale non si sposta di un pixel,
+   * mentre in verticale sborda di 540 e se ne concede la meta.
+   *
+   * Misurando la sola fotografia — il conto di prima, `lato * (livello - 1) /
+   * 2` — verrebbero 270px anche in orizzontale: 270px di nero trascinabili in
+   * scena, il 19% dello schermo.
    */
-  it('lo spostamento si ferma sui bordi della fotografia, non su quelli dello schermo', async () => {
+  it('lo spostamento si ferma dove la fotografia copre la cornice', async () => {
     const { superficie } = montaConRiquadro(0, vi.fn(), vi.fn(), {
       superficie: [1440, 900],
       fotografia: [900, 900],
     })
     await userEvent.click(screen.getByRole('button', { name: dict.lightboxZoomIn }))
 
-    // Otto passi da 60px chiedono 480: piu di tutti e due i limiti in gioco.
+    // Otto passi da 60px chiedono 480 per asse: piu di tutti i limiti in gioco.
     for (let i = 0; i < 8; i += 1) await userEvent.keyboard('{ArrowLeft}')
+    for (let i = 0; i < 8; i += 1) await userEvent.keyboard('{ArrowUp}')
 
-    expect(parseFloat(superficie.style.getPropertyValue('--pan-x'))).toBeCloseTo(270)
+    expect(parseFloat(superficie.style.getPropertyValue('--pan-x'))).toBe(0)
+    expect(parseFloat(superficie.style.getPropertyValue('--pan-y'))).toBeCloseTo(270)
   })
 
   it('cambiando fotografia torna a schermo intero', async () => {

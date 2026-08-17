@@ -46,8 +46,9 @@ export function Lightbox({
   // superficie prende tutto lo schermo e ritaglia — ed e li che vanno raccolti
   // i gesti, altrimenti il dito sul nero attorno non sposterebbe nulla —
   // mentre la fotografia dentro resta grande quanto il suo rapporto le
-  // concede. I conti dell'ingrandimento vogliono la seconda: il tetto e i
-  // limiti dello spostamento parlano dei pixel dipinti, non della finestra.
+  // concede. I conti dell'ingrandimento li vogliono tutti e due: il tetto
+  // parla dei pixel dipinti, i limiti dello spostamento di quanto quei pixel
+  // sbordano dalla cornice.
   const fotografiaRef = useRef<HTMLDivElement>(null)
   const photo = photos[index]
 
@@ -57,7 +58,7 @@ export function Lightbox({
   useScrollLock()
 
   const sizesDiRiposo = sizesForLightbox(photo.ar)
-  const zoom = useZoom({ id: photo.id, url: photo.url, riquadroRef: fotografiaRef, sizesDiRiposo })
+  const zoom = useZoom({ id: photo.id, url: photo.url, fotografiaRef, superficieRef, sizesDiRiposo })
   const { inGesto } = useGestiZoom({ superficieRef, zoom })
 
   // Ogni cambio di fotografia riapre l'attesa. L'indicatore non compare
