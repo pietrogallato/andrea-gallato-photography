@@ -66,7 +66,9 @@ export const VELOCITA_SCATTO_PX_MS = 0.5
  * La sola velocita non basta: il rilascio di un tocco nervoso copre pochi pixel
  * in pochi millisecondi, e in rapporto e velocissimo. Tre volte l'impegno e il
  * punto in cui uno spostamento smette di poter essere un tocco storto.
- * **Scelto, non misurato.**
+ * **Scelto, non misurato** — vedi il §3 di
+ * docs/verifiche/protocolli-verifiche-manuali.md, che dice da quale sintomo si
+ * riconosce che e questa la soglia sbagliata.
  */
 export const MINIMO_SCATTO_PX = 3 * IMPEGNO_PX
 
@@ -76,7 +78,9 @@ export const MINIMO_SCATTO_PX = 3 * IMPEGNO_PX
  * Il bordo non e un muro: si piega e non si passa. E il modo con cui un
  * sfogliatore dice «di qua e finito» senza scrivere niente e senza spegnere
  * nulla. Un quarto e abbastanza da vedersi e poco da sembrare un cambio
- * riuscito a meta. **Scelto, non misurato.**
+ * riuscito a meta. **Scelto, non misurato** — vedi il §3 di
+ * docs/verifiche/protocolli-verifiche-manuali.md, che dice da quale sintomo si
+ * riconosce che e questa la soglia sbagliata.
  */
 export const CEDIMENTO_AL_BORDO = 0.25
 

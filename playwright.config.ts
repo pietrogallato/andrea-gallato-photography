@@ -12,6 +12,34 @@ import { defineConfig, devices } from '@playwright/test'
  * script del tema che faceva emettere un errore a ogni cambio di lingua. In
  * produzione nessuno dei due e osservabile, quindi la suite non li vedeva.
  */
+/**
+ * DIFETTO NOTO, e non e nostro: WebKit si pianta al 64esimo contesto.
+ *
+ * Sintomo: in una passata intera, `webkit` e `iphone` falliscono ciascuno un
+ * test — sempre e solo il 55esimo del proprio progetto, qualunque esso sia —
+ * con `page.goto ... waiting until "load"` che scade a 30s. La traccia del test
+ * fallito non contiene NESSUNA richiesta di rete: la navigazione non parte
+ * proprio, non e una risorsa appesa (che e invece la patologia diversa
+ * descritta in e2e/fixtures.ts).
+ *
+ * Non e il sito, e non e la suite. **Misurato il 2026-08-17**, riprodotto fuori
+ * dal test runner con uno script di venti righe: `webkit.launch()` e poi
+ * `newContext()` / `goto` / `context.close()` in fila si pianta al contesto 64
+ * esatto, identico con o senza l'intercettazione del CDN, e identico puntando a
+ * una pagina HTML statica di una riga servita da `python3 -m http.server` —
+ * cioe senza Next.js, senza il nostro codice e senza immagini. 64 e un tetto
+ * secco, non una lentezza: il contesto 63 naviga in 43ms, il 64esimo non
+ * risponde piu.
+ *
+ * Perche il colpevole apparente cambia a ogni commit: il test che muore e
+ * sempre il 55esimo in ordine di esecuzione, quindi basta aggiungere un test
+ * qualunque prima di lui perche la vittima diventi quello accanto. E cio che
+ * fa sembrare il difetto legato all'ultima modifica quando non lo e mai.
+ *
+ * Non e stato corretto qui perche il rimedio — riciclare il browser, cioe
+ * alzare `workers` o spezzare i progetti — cambia il modello di esecuzione di
+ * tutta la suite, e va deciso a parte e non come effetto collaterale.
+ */
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
