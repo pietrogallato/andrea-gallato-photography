@@ -115,16 +115,32 @@ export function useGestiZoom({
       return relativo((a.x + b.x) / 2, (a.y + b.y) / 2)
     }
 
+    /**
+     * Fissa la coppia di dita da cui si misura la pizzicata.
+     *
+     * Va rifatto ogni volta che le dita sullo schermo tornano a essere due, non
+     * solo quando il secondo dito scende: con un terzo dito appoggiato per
+     * sbaglio — il mignolo, il pollice della mano che regge — e poi uno dei due
+     * originali che si alza, la coppia e un'altra ma la distanza di partenza
+     * sarebbe rimasta quella di prima. Il primo micromovimento la
+     * confronterebbe con una base che non c'entra piu, e chi guarda un
+     * dettaglio a 2x si vedrebbe tornare la fotografia a schermo intero senza
+     * aver chiesto nulla.
+     */
+    function agganciaCoppia() {
+      distanzaIniziale = distanza()
+      livelloIniziale = zoomRef.current.livello
+      ultimo = null
+      pizzicata = true
+    }
+
     function giu(event: PointerEvent) {
       puntatori.set(event.pointerId, { x: event.clientX, y: event.clientY })
       partenze.set(event.pointerId, { x: event.clientX, y: event.clientY })
       el!.setPointerCapture(event.pointerId)
 
       if (puntatori.size === 2) {
-        distanzaIniziale = distanza()
-        livelloIniziale = zoomRef.current.livello
-        ultimo = null
-        pizzicata = true
+        agganciaCoppia()
       } else if (puntatori.size === 1) {
         ultimo = { x: event.clientX, y: event.clientY }
       }
@@ -182,7 +198,11 @@ export function useGestiZoom({
 
       puntatori.delete(event.pointerId)
       el!.releasePointerCapture(event.pointerId)
-      if (puntatori.size < 2) distanzaIniziale = 0
+      // Scendendo da tre dita a due la pizzicata continua, ma fra due dita
+      // diverse: la base va rifatta qui, o resterebbe quella della coppia che
+      // non esiste piu.
+      if (puntatori.size === 2) agganciaCoppia()
+      else if (puntatori.size < 2) distanzaIniziale = 0
       if (puntatori.size === 0) {
         ultimo = null
         pizzicata = false

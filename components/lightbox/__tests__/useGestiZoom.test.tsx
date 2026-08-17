@@ -103,6 +103,41 @@ describe('useGestiZoom', () => {
     expect(result.current.zoom.livello).toBe(1)
   })
 
+  /**
+   * Un terzo dito che si appoggia per sbaglio — il mignolo, il pollice della
+   * mano che regge — e poi uno dei due originali che si alza. Si torna a due
+   * dita, ma non sono la coppia di prima: se la distanza di partenza resta
+   * quella vecchia, il primo micromovimento la confronta con una base che non
+   * c entra piu e il livello crolla. Chi stava guardando un dettaglio a 2x si
+   * vede tornare la fotografia a schermo intero senza aver chiesto nulla.
+   */
+  it('il cambio di coppia di dita non fa crollare l ingrandimento', () => {
+    const { el, result } = monta()
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 300, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointerdown', { id: 2, x: 500, y: 300, tempo: 1010 }))
+    })
+    // 200px di distanza diventano 400: livello 2.
+    act(() => {
+      el.dispatchEvent(puntatore('pointermove', { id: 2, x: 700, y: 300, tempo: 1100 }))
+    })
+    expect(result.current.zoom.livello).toBeCloseTo(2, 4)
+
+    // Il terzo dito si appoggia, poi si alza uno dei due della coppia iniziale.
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 3, x: 400, y: 300, tempo: 1200 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 2, x: 700, y: 300, tempo: 1300 }))
+    })
+
+    // Un movimento di un pixel della nuova coppia, distante 100px: il livello
+    // deve restare quello, non ripartire da un rapporto con i vecchi 200px.
+    act(() => {
+      el.dispatchEvent(puntatore('pointermove', { id: 3, x: 401, y: 300, tempo: 1400 }))
+    })
+    expect(result.current.zoom.livello).toBeCloseTo(2, 1)
+  })
+
   it('il doppio tocco con un dito solo continua a ingrandire', () => {
     const { el, result } = monta()
     act(() => {
