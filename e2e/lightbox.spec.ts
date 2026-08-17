@@ -95,6 +95,58 @@ test('un trascinamento corto non cambia fotografia e la rimette a posto', async 
   await expect.poll(() => spostamentoDipinto(page)).toBe(0)
 })
 
+/**
+ * Lo spostamento dipinto due fotogrammi dopo, cioe una trentina di millisecondi.
+ *
+ * Il ritorno elastico e una transizione CSS lunga `--duration-fast`, 200ms:
+ * **misurato il 2026-08-17** su un ritorno da -62px, al terzo fotogramma la
+ * fotografia era ancora a -45. Due fotogrammi sono percio ampiamente dentro la
+ * transizione quando c e, e ampiamente fuori quando non c e.
+ */
+async function spostamentoDopoDueFotogrammi(page: import('@playwright/test').Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      new Promise<number>((risolvi) => {
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            const img = document.querySelector('dialog figure img') as HTMLElement
+            risolvi(new DOMMatrixReadOnly(getComputedStyle(img).transform).m41)
+          }),
+        )
+      }),
+  )
+}
+
+/**
+ * Il ritorno elastico e una transizione CSS e non un'animazione in JavaScript
+ * proprio perche chi ha chiesto meno movimento possa fermarla: la regola
+ * globale di `prefers-reduced-motion` azzera le durate CSS e non saprebbe
+ * fermare un requestAnimationFrame. Fin qui pero era solo una ragione scritta
+ * in un commento — la transizione era misurata, il suo spegnersi no. E la
+ * distanza fra le due cose e un difetto vero: chi soffre di disturbi
+ * vestibolari vedrebbe la fotografia scivolare a ogni trascinamento andato a
+ * vuoto, che e il gesto piu frequente di tutti.
+ */
+test('con meno movimento richiesto il ritorno elastico non scivola', async ({ page }) => {
+  // `emulateMedia` e non l opzione di contesto: `test.use` qui vorrebbe dire un
+  // describe a parte, e la preferenza serve accesa su una pagina sola.
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await openFirst(page)
+  const prima = await page.getByRole('dialog').getAttribute('aria-label')
+
+  const riquadro = (await page.locator('dialog figure > div').boundingBox())!
+  // Sotto la soglia e lento: e il trascinamento che va a vuoto, cioe quello che
+  // fa tornare indietro la fotografia.
+  await trascina(page, { dx: -Math.round(riquadro.width / 10), durataMs: 800 })
+  // Col dito ancora giu la fotografia e di traverso davvero: senza questo il
+  // test potrebbe misurare uno zero che non e mai stato diverso da zero.
+  expect(await spostamentoDipinto(page)).toBeLessThan(0)
+
+  await page.mouse.up()
+  expect(await spostamentoDopoDueFotogrammi(page)).toBe(0)
+  await expect(page.getByRole('dialog')).toHaveAttribute('aria-label', prima!)
+})
+
 test('rende inerte il contenuto sottostante', async ({ page }) => {
   await openFirst(page)
 
