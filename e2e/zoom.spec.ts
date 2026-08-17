@@ -276,6 +276,59 @@ test('spinto fino in fondo, lo spostamento non apre una fessura di sfondo', asyn
   expect(Math.abs(opposta.basso - schermo.height)).toBeLessThanOrEqual(1)
 })
 
+/**
+ * Col mouse il trascinamento moriva dopo il primo spostamento: l `<img>` fa
+ * partire il trascinamento nativo del browser, che chiude il nostro gesto con
+ * un `pointercancel`. **Misurato il 2026-08-17** a 1440x900: sei spostamenti da
+ * 30px muovevano la fotografia di 30 invece che di 180.
+ *
+ * Non era una regressione — succedeva anche prima che la cornice si espandesse
+ * — ma prima si vedeva molto meno, perche la finestra da percorrere era un
+ * quadrato al centro dello schermo e non lo schermo intero.
+ */
+test('il trascinamento col mouse arriva fino in fondo, non muore al primo scatto', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!!isMobile, 'il mouse non esiste sul telefono: li il gesto e il dito, gia sotto verifica a mano')
+
+  await apriPrima(page)
+  await senzaTransizione(page)
+  // Al tetto c e margine di manovra su tutti e due gli assi a qualunque
+  // viewport: a livelli bassi una quadrata su uno schermo largo non si sposta
+  // in orizzontale nemmeno di un pixel, e il test non direbbe nulla.
+  for (let i = 0; i < 12; i += 1) await page.keyboard.press('+')
+  await expect(page.getByRole('button', { name: 'Ingrandisci la fotografia' })).toHaveAttribute(
+    'aria-disabled',
+    'true',
+  )
+
+  const schermo = page.viewportSize()!
+  const partenza = await bordiFotografia(page)
+
+  // Quanto si puo percorrere partendo dal centro, meno un pixel di sicurezza.
+  // Non e la stessa cifra a ogni browser e va calcolata: su Desktop Safari il
+  // rapporto di pixel e 2, il tetto in cifre si dimezza e da un estremo
+  // all altro restano 251px invece dei 1783 di Chromium. Con un passo fisso il
+  // trascinamento finirebbe contro il limite, e il test misurerebbe quello
+  // invece del difetto che insegue.
+  const margine = Math.floor((partenza.destro - partenza.sinistro - schermo.width) / 2) - 1
+  const scatto = Math.min(30, Math.floor(margine / 6))
+  expect(scatto).toBeGreaterThan(5)
+
+  await page.mouse.move(schermo.width / 2, schermo.height / 2)
+  await page.mouse.down()
+  for (let i = 1; i <= 6; i += 1) {
+    await page.mouse.move(schermo.width / 2 - i * scatto, schermo.height / 2)
+    await page.waitForTimeout(50)
+  }
+  await page.mouse.up()
+
+  const arrivo = await bordiFotografia(page)
+  // Sei scatti chiesti, sei percorsi. Prima se ne percorreva uno.
+  expect(partenza.sinistro - arrivo.sinistro).toBeCloseTo(scatto * 6, 0)
+})
+
 test('nessuna violazione axe con la fotografia ingrandita', async ({ page }) => {
   await apriPrima(page)
   await page.getByRole('button', { name: 'Ingrandisci la fotografia' }).click()
