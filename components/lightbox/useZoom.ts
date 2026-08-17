@@ -38,15 +38,28 @@ const INDICATORE_MS = 300
 
 export type Vista = { livello: number; pan: Punto }
 
+/**
+ * Le due misure che servono, e servono entrambe.
+ *
+ * `fotografia` e la finestra in cui la fotografia viene dipinta, e non cambia
+ * ingrandendo: il tetto e la larghezza da chiedere al CDN parlano di quei
+ * pixel. `cornice` e cio che ritaglia, cioe il dialog, che e lo schermo: i
+ * limiti dello spostamento parlano di quanto la fotografia ingrandita sborda da
+ * li, quindi di tutte e due.
+ */
+type Misure = { fotografia: Riquadro; cornice: Riquadro }
+
 export function useZoom({
   id,
   url,
-  riquadroRef,
+  fotografiaRef,
+  corniceRef,
   sizesDiRiposo,
 }: {
   id: string
   url: string
-  riquadroRef: { current: HTMLElement | null }
+  fotografiaRef: { current: HTMLElement | null }
+  corniceRef: { current: HTMLElement | null }
   sizesDiRiposo: string
 }) {
   const [vista, setVista] = useState<Vista>({ livello: 1, pan: { x: 0, y: 0 } })
@@ -57,13 +70,18 @@ export function useZoom({
   /** Il gradino piu grande gia ottenuto: non si torna mai indietro riducendo. */
   const massimoChiesto = useRef(0)
 
-  const misura = useCallback((): Riquadro | null => {
-    const el = riquadroRef.current
-    if (!el) return null
-    const r = el.getBoundingClientRect()
-    if (r.width <= 0 || r.height <= 0) return null
-    return { larghezza: r.width, altezza: r.height }
-  }, [riquadroRef])
+  const misura = useCallback((): Misure | null => {
+    const uno = (el: HTMLElement | null): Riquadro | null => {
+      if (!el) return null
+      const r = el.getBoundingClientRect()
+      if (r.width <= 0 || r.height <= 0) return null
+      return { larghezza: r.width, altezza: r.height }
+    }
+    const fotografia = uno(fotografiaRef.current)
+    const cornice = uno(corniceRef.current)
+    if (!fotografia || !cornice) return null
+    return { fotografia, cornice }
+  }, [fotografiaRef, corniceRef])
 
   // Cambiando fotografia si torna a schermo intero. Senza, si arriverebbe
   // sulla successiva gia ingranditi in un punto che non ha senso per lei.
@@ -82,33 +100,40 @@ export function useZoom({
   // misura sarebbe quella degenere e il tetto resterebbe per sempre il minimo
   // di ripiego.
   useEffect(() => {
-    const el = riquadroRef.current
     function ricalcola() {
-      const r = misura()
+      const m = misura()
       const nuovoTetto = tettoDiIngrandimento({
         url,
-        larghezzaDipintaCss: r?.larghezza ?? 0,
+        larghezzaDipintaCss: m?.fotografia.larghezza ?? 0,
         dpr: window.devicePixelRatio || 1,
       })
       setTetto(nuovoTetto)
-      if (!r) return
-      // Un riquadro nuovo rimette in discussione le due invarianti: il livello
+      if (!m) return
+      // Riquadri nuovi rimettono in discussione le due invarianti: il livello
       // puo essere rimasto sopra il tetto appena sceso, e lo spostamento fuori
       // dai bordi appena stretti. La vista uguale si restituisce identica,
       // perche un oggetto nuovo a ogni misura farebbe rendere all'infinito.
       setVista((v) => {
-        const nuova = applica(v, v.livello, undefined, r, nuovoTetto)
+        const nuova = applica(v, v.livello, undefined, m, nuovoTetto)
         return nuova.livello === v.livello && nuova.pan.x === v.pan.x && nuova.pan.y === v.pan.y
           ? v
           : nuova
       })
     }
     ricalcola()
-    if (!el) return
+    // Tutti e due gli elementi sotto osservazione, non solo la fotografia: i
+    // limiti dello spostamento dipendono dalla differenza fra i due riquadri, e
+    // allargando soltanto la finestra in orizzontale la cornice cresce mentre
+    // la fotografia — vincolata dall'altezza — resta identica. Osservando la
+    // sola fotografia quel margine resterebbe quello di prima.
+    const elementi = [fotografiaRef.current, corniceRef.current].filter(
+      (el): el is HTMLElement => el !== null,
+    )
+    if (elementi.length === 0) return
     const osservatore = new ResizeObserver(ricalcola)
-    osservatore.observe(el)
+    elementi.forEach((el) => osservatore.observe(el))
     return () => osservatore.disconnect()
-  }, [url, misura, riquadroRef])
+  }, [url, misura, fotografiaRef, corniceRef])
 
   /**
    * Il calcolo di una nuova vista, fuori da React perche non dipenda da nulla
@@ -118,11 +143,11 @@ export function useZoom({
     v: Vista,
     richiesto: number,
     punto: Punto | undefined,
-    riquadro: Riquadro | null,
+    m: Misure | null,
     limite: number,
   ): Vista {
     const livello = Math.min(Math.max(richiesto, 1), limite)
-    if (!riquadro) return { livello, pan: { x: 0, y: 0 } }
+    if (!m) return { livello, pan: { x: 0, y: 0 } }
     const grezzo = punto
       ? spostamentoPerPuntoFisso({
           punto,
@@ -131,13 +156,13 @@ export function useZoom({
           panVecchio: v.pan,
         })
       : { x: (v.pan.x * livello) / v.livello, y: (v.pan.y * livello) / v.livello }
-    return { livello, pan: limitaSpostamento({ pan: grezzo, livello, riquadro }) }
+    return { livello, pan: limitaSpostamento({ pan: grezzo, livello, ...m }) }
   }
 
   const versoLivello = useCallback(
     (richiesto: number, punto?: Punto) => {
-      const riquadro = misura()
-      setVista((v) => applica(v, richiesto, punto, riquadro, tetto))
+      const m = misura()
+      setVista((v) => applica(v, richiesto, punto, m, tetto))
     },
     [misura, tetto],
   )
@@ -152,23 +177,23 @@ export function useZoom({
    */
   const perFattore = useCallback(
     (fattore: number, punto?: Punto) => {
-      const riquadro = misura()
-      setVista((v) => applica(v, v.livello * fattore, punto, riquadro, tetto))
+      const m = misura()
+      setVista((v) => applica(v, v.livello * fattore, punto, m, tetto))
     },
     [misura, tetto],
   )
 
   const sposta = useCallback(
     (delta: Punto) => {
-      const riquadro = misura()
+      const m = misura()
       setVista((v) => {
-        if (!riquadro) return v
+        if (!m) return v
         return {
           ...v,
           pan: limitaSpostamento({
             pan: { x: v.pan.x + delta.x, y: v.pan.y + delta.y },
             livello: v.livello,
-            riquadro,
+            ...m,
           }),
         }
       })
@@ -181,8 +206,8 @@ export function useZoom({
   const azzera = useCallback(() => versoLivello(1), [versoLivello])
   const alDoppioTocco = useCallback(
     (punto: Punto) => {
-      const riquadro = misura()
-      setVista((v) => applica(v, v.livello > 1 ? 1 : LIVELLO_DOPPIO_TOCCO, punto, riquadro, tetto))
+      const m = misura()
+      setVista((v) => applica(v, v.livello > 1 ? 1 : LIVELLO_DOPPIO_TOCCO, punto, m, tetto))
     },
     [misura, tetto],
   )
@@ -192,12 +217,12 @@ export function useZoom({
   // cache e cambia variante senza un istante di vuoto.
   useEffect(() => {
     if (vista.livello <= 1) return
-    const riquadro = misura()
-    if (!riquadro) return
+    const m = misura()
+    if (!m) return
 
     const dpr = window.devicePixelRatio || 1
     const larghezza = larghezzaDaChiedere({
-      larghezzaDipintaCss: riquadro.larghezza,
+      larghezzaDipintaCss: m.fotografia.larghezza,
       dpr,
       livello: vista.livello,
     })
@@ -229,7 +254,7 @@ export function useZoom({
         .then(() => {
           if (!vivo) return
           massimoChiesto.current = larghezza
-          setSizes(sizesPerLivello({ larghezzaDipintaCss: riquadro.larghezza, livello: vista.livello }))
+          setSizes(sizesPerLivello({ larghezzaDipintaCss: m.fotografia.larghezza, livello: vista.livello }))
         })
         .catch(() => {
           // Un gradino che non arriva non e un guasto da mostrare: resta a

@@ -56,23 +56,38 @@ function fra(valore: number, minimo: number, massimo: number): number {
 }
 
 /**
- * Tiene la fotografia attaccata ai bordi del riquadro.
+ * Tiene la fotografia attaccata ai bordi della cornice che la ritaglia.
  *
  * Senza questo vincolo si potrebbe trascinare l'immagine fuori scena e restare
  * a guardare lo sfondo, che e il modo piu rapido di far sembrare rotto un
  * visualizzatore.
+ *
+ * Due riquadri e non uno, perche non sono la stessa cosa: `cornice` e cio che
+ * ritaglia — da ingranditi lo schermo intero — e `fotografia` e cio che viene
+ * dipinto dentro, che con un rapporto diverso da quello dello schermo e piu
+ * piccola. Il margine di manovra e quanto la fotografia ingrandita sborda dalla
+ * cornice, per asse. Misurandolo sulla sola fotografia — `lato * (livello - 1)
+ * / 2` — a 1440x900 e livello 1,6 su una quadrata dipinta 900x900 verrebbero
+ * 270px in orizzontale dove la fotografia e larga esattamente quanto lo
+ * schermo: 270px di sfondo trascinabili in scena, cioe proprio il difetto che
+ * il vincolo dovrebbe impedire.
+ *
+ * Il massimo non scende mai sotto zero: finche la fotografia non riempie la
+ * cornice non c'e nulla da spostare, e il nero attorno resta fermo.
  */
 export function limitaSpostamento({
   pan,
   livello,
-  riquadro,
+  fotografia,
+  cornice,
 }: {
   pan: Punto
   livello: number
-  riquadro: Riquadro
+  fotografia: Riquadro
+  cornice: Riquadro
 }): Punto {
-  const massimoX = (riquadro.larghezza * (livello - 1)) / 2
-  const massimoY = (riquadro.altezza * (livello - 1)) / 2
+  const massimoX = Math.max(0, (fotografia.larghezza * livello - cornice.larghezza) / 2)
+  const massimoY = Math.max(0, (fotografia.altezza * livello - cornice.altezza) / 2)
   return {
     x: fra(pan.x, -massimoX, massimoX),
     y: fra(pan.y, -massimoY, massimoY),
@@ -87,6 +102,16 @@ export function limitaSpostamento({
  * che si usa e uno che si combatte.
  *
  * `punto` e in coordinate del riquadro rispetto al suo centro.
+ *
+ * Il conto compone i soli livelli, e vale finche la scatola dipinta sotto la
+ * trasformazione resta quella: fino al 2026-08-17 quella scatola cresceva
+ * passando a tutto schermo, e l assunzione saltava proprio nel gesto piu
+ * comune — la prima pizzicata — con 92,5px di scarto misurati a 1440x900.
+ * Adesso la fotografia si dipinge alla stessa larghezza nei due stati, e il
+ * confine non e piu un caso a parte. Resta un limite che nessun conto puo
+ * togliere: finche la fotografia sta dentro la cornice, `limitaSpostamento` la
+ * tiene centrata — a ragione, altrimenti entrerebbe lo sfondo — e li il punto
+ * sotto il dito non puo restare fermo.
  */
 export function spostamentoPerPuntoFisso({
   punto,

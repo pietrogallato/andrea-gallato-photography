@@ -44,22 +44,29 @@ describe('tettoDiIngrandimento', () => {
 import { limitaSpostamento } from '../zoom'
 
 describe('limitaSpostamento', () => {
-  const riquadro = { larghezza: 800, altezza: 600 }
+  // A riposo i due riquadri coincidono: la cornice ha la forma della
+  // fotografia. E il caso in cui il vecchio conto e quello nuovo danno lo
+  // stesso risultato.
+  const fotografia = { larghezza: 800, altezza: 600 }
+  const cornice = fotografia
 
   it('a riposo non lascia spostare di un pixel', () => {
-    expect(limitaSpostamento({ pan: { x: 50, y: 50 }, livello: 1, riquadro })).toEqual({ x: 0, y: 0 })
+    expect(limitaSpostamento({ pan: { x: 50, y: 50 }, livello: 1, fotografia, cornice })).toEqual({
+      x: 0,
+      y: 0,
+    })
   })
 
   it('lascia passare uno spostamento dentro i limiti', () => {
     // A livello 2 la meta che sborda vale 400 in orizzontale e 300 in verticale.
-    expect(limitaSpostamento({ pan: { x: 120, y: -80 }, livello: 2, riquadro })).toEqual({
+    expect(limitaSpostamento({ pan: { x: 120, y: -80 }, livello: 2, fotografia, cornice })).toEqual({
       x: 120,
       y: -80,
     })
   })
 
   it('taglia lo spostamento che aprirebbe una fessura', () => {
-    expect(limitaSpostamento({ pan: { x: 999, y: -999 }, livello: 2, riquadro })).toEqual({
+    expect(limitaSpostamento({ pan: { x: 999, y: -999 }, livello: 2, fotografia, cornice })).toEqual({
       x: 400,
       y: -300,
     })
@@ -67,8 +74,48 @@ describe('limitaSpostamento', () => {
 
   it('non si lascia confondere da un riquadro non misurato', () => {
     expect(
-      limitaSpostamento({ pan: { x: 10, y: 10 }, livello: 3, riquadro: { larghezza: 0, altezza: 0 } }),
+      limitaSpostamento({
+        pan: { x: 10, y: 10 },
+        livello: 3,
+        fotografia: { larghezza: 0, altezza: 0 },
+        cornice: { larghezza: 0, altezza: 0 },
+      }),
     ).toEqual({ x: 0, y: 0 })
+  })
+
+  /**
+   * Il caso che conta da quando la cornice si espande: una quadrata dipinta
+   * 900x900 dentro uno schermo 1440x900. A 1,6x la fotografia e larga
+   * esattamente 1440, cioe copre la cornice al pixel: non sborda di nulla, e
+   * spostarla in orizzontale non puo che mettere in scena lo sfondo.
+   * In verticale sborda invece di 1440 - 900 = 540, meta per parte.
+   */
+  it('misura il margine di manovra sulla cornice che ritaglia, non sulla fotografia', () => {
+    expect(
+      limitaSpostamento({
+        pan: { x: 999, y: 999 },
+        livello: 1.6,
+        fotografia: { larghezza: 900, altezza: 900 },
+        cornice: { larghezza: 1440, altezza: 900 },
+      }),
+    ).toEqual({ x: 0, y: 270 })
+  })
+
+  /**
+   * Sotto il punto in cui la fotografia copre la cornice non c e proprio nulla
+   * da spostare: il nero attorno e fermo, e trascinarlo sarebbe il difetto che
+   * questo limite esiste per impedire. Una quadrata 412x412 su un telefono
+   * 412x915 copre lo schermo solo da 915/412 = 2,22x in su.
+   */
+  it('non concede spostamento finche la fotografia non riempie la cornice', () => {
+    expect(
+      limitaSpostamento({
+        pan: { x: 300, y: 200 },
+        livello: 2,
+        fotografia: { larghezza: 412, altezza: 412 },
+        cornice: { larghezza: 412, altezza: 915 },
+      }),
+    ).toEqual({ x: 206, y: 0 })
   })
 })
 

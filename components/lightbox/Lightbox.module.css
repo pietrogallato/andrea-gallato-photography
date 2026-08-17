@@ -38,18 +38,29 @@
   gap: var(--space-4);
   max-width: min(100vw, calc(100dvh * 2));
   max-height: 100dvh;
-  padding: var(--space-6) var(--space-5) var(--space-5);
+  /* Il margine attorno alla fotografia e il prezzo che si paga in superficie:
+     ogni pixel di padding e un pixel che lo scatto non ha. Resta quel poco che
+     serve a staccarlo dai bordi dello schermo e a non far toccare la
+     didascalia al fondo. */
+  padding: var(--space-4) var(--space-3);
   /* pan-y preserva lo scroll verticale, pinch-zoom preserva l ingrandimento,
      che e il meccanismo con cui un utente ipovedente ingrandisce la foto. */
   touch-action: pan-y pinch-zoom;
 }
 
-/* La superficie e cio che si misura, cio che riceve i gesti e cio che porta le
-   variabili dell ingrandimento. Il ritaglio invece resta al contenitore di
-   SanityImage, che ha gia overflow: hidden e il rapporto giusto. */
+/* La superficie e cio che riceve i gesti e cio che porta le variabili
+   dell ingrandimento. Il ritaglio non e suo in nessuno dei due stati: a riposo
+   e del contenitore di SanityImage, che ha gia overflow: hidden e il rapporto
+   giusto; da ingranditi e del dialog, che e lo schermo — vedi le regole di
+   `data-ingrandita`.
+
+   La sua misura e quella della fotografia dipinta: `.image` la riempie in
+   larghezza e ne eredita l altezza dal rapporto. Cio che si misura per i conti
+   dell ingrandimento, pero, e il contenitore di SanityImage, che e l unico a
+   coincidere con la fotografia per definizione e non per conseguenza. */
 .superficie {
-  width: min(100%, calc(78dvh * var(--ar)));
-  max-height: 78dvh;
+  width: min(100%, calc(86dvh * var(--ar)));
+  max-height: 86dvh;
   /* `none` solo qui: la pizzicata su questa superficie e nostra. Su didascalia,
      pulsanti e margini resta quella del browser, che ingrandisce la pagina ed e
      il modo con cui chi ci vede poco legge una didascalia piccola (WCAG 1.4.4).
@@ -93,15 +104,95 @@
   transition: none;
 }
 
+/* Ingranditi: a crescere e la fotografia, non la finestra.
+   ------------------------------------------------------------------
+   A riposo il riquadro che ritaglia ha la forma della fotografia, e va bene:
+   attorno c e il nero e la didascalia. Ingrandendo, pero, quel riquadro era una
+   prigione: il contenuto cresceva senza che la finestra crescesse mai — si
+   moltiplicavano i pixel dentro gli stessi 702x702 su uno schermo da 1440x900.
+
+   Il primo rimedio era stato gonfiare la finestra fino al viewport. Gonfiandola
+   pero cambiava anche la larghezza con cui la fotografia viene dipinta, e quel
+   cambio si aggiungeva tutto insieme al primo micro-ingrandimento: **misurato il
+   2026-08-17** a 1440x900, la pizzicata da trackpad piu piccola possibile
+   (livello 1,0040, cioe +0,40%) faceva passare la fotografia da 774 a 903,6
+   pixel sullo schermo, il 16,7% in piu, con l angolo in alto a sinistra
+   spostato di 65px a sinistra e 40px in alto in un fotogramma.
+
+   Qui la finestra resta quella che e — la fotografia si dipinge sempre alla
+   stessa larghezza, in tutti e due gli stati — e a ritagliare, da ingranditi,
+   passa il dialog, che e gia il viewport e ha gia overflow: hidden. Il livello
+   diventa cosi l unica cosa che cambia: la fotografia sullo schermo e larghezza
+   di riposo per livello, e basta. Ne discendono due cose che prima non erano
+   vere: il tetto non ha bisogno di essere rimisurato attraversando il confine,
+   e il punto fisso della pizzicata — che compone i soli livelli — resta esatto.
+
+   Resta un movimento, ed e voluto: la didascalia si ritira, e la fotografia si
+   ricentra sullo schermo. Sono 24,8px in verticale a 1440x900, senza cambio di
+   dimensione — la didascalia che se ne va, non un salto di scala. */
+
+/* Selettore composto e non `.image` da solo: `overflow` qui contraddice quello
+   del wrapper di SanityImage, che ha la stessa specificita di una classe. Fra
+   due regole pari vincerebbe l ordine dei fogli nel bundle, che non e nostro
+   da decidere. Senza questa riga l ingrandimento resterebbe imprigionato nei
+   bordi del wrapper e non si vedrebbe alcuna differenza. */
+.dialog[data-ingrandita='true'] .image {
+  overflow: visible;
+}
+
+/* Il riquadro invisibile che raccoglie i gesti su tutto lo schermo.
+   Da ingranditi la fotografia esce dalla sua finestra, e il dito che la
+   trascina non ha motivo di restare dentro quel rettangolo: senza questo, un
+   trascinamento cominciato sul nero attorno non sposterebbe nulla.
+
+   Uno pseudo-elemento e non un elemento vero: non ha niente da dire ne alla
+   struttura ne all albero di accessibilita. Sta sotto la fotografia — stessa
+   fase di disegno, ma prima nell ordine dell albero — e sotto i comandi, che
+   portano z-index: 2; i suoi eventi arrivano comunque alla superficie, che
+   resta il bersaglio, quindi i gestori sono quelli di sempre.
+   `touch-action` va ripetuto perche non si eredita: senza, il dito sullo
+   sfondo scorrerebbe la pagina invece di spostare la fotografia. */
+.dialog[data-ingrandita='true'] .superficie::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+}
+
+/* Il fondo semitrasparente non e decorazione: con il margine laterale sceso a
+   16px le frecce, che stanno anche loro a 16px dal bordo, cadono per intero
+   sopra la fotografia invece che sul nero attorno. Su uno scatto chiaro un
+   segno grigio su bianco non si legge. E lo stesso fondo dei comandi
+   dell ingrandimento, che il problema ce l avevano gia: tutto cio che si
+   sovrappone alla fotografia si comporta allo stesso modo.
+
+   Il 78% e risolto, non scelto a occhio: WCAG 1.4.11 chiede 3:1 a un icona, e
+   il caso peggiore e lo scatto bianco. Il tratto e --fg-muted #8f8d8a, che
+   perche il rapporto arrivi a 3 pretende un fondo sotto rgb(67,67,67); il
+   composito sul bianco vale 255 - alpha * (255 - canale di --bg), e il canale
+   piu chiaro di #08080a e 10, quindi alpha >= 0,769. **Misurato a pixel il
+   2026-08-17** su build di produzione, fotografia servita bianca, 412x915: col
+   72% di prima il composito era rgb(77,77,78), cioe 2,55:1 — sotto soglia, e
+   paradossalmente peggio del 3,31:1 che l icona nuda aveva sul bianco puro.
+
+   z-index: 2 come i comandi dell ingrandimento, e per la stessa ragione. Da
+   ingranditi la fotografia copre lo schermo, e sia l `<img>` — che porta una
+   trasformazione — sia il suo contenitore dipingono nella fase degli elementi
+   posizionati: fra pari decide l ordine dell albero, e nel JSX la chiusura sta
+   prima della figure. Senza questa riga il pulsante finiva sotto la fotografia:
+   invisibile, inerte, e col contorno del fuoco oscurato, che WCAG 2.4.11 non
+   consente. Le frecce si salvavano solo perche stanno dopo nel JSX. */
 .close,
 .prev,
 .next {
   position: absolute;
+  z-index: 2;
   display: grid;
   place-items: center;
   min-width: var(--target-min);
   min-height: var(--target-min);
   color: var(--fg-muted);
+  background: color-mix(in oklab, var(--bg) 78%, transparent);
   border-radius: var(--radius);
   transition: color var(--duration-fast) var(--ease),
     opacity var(--duration-fast) var(--ease);
@@ -213,7 +304,8 @@
   min-width: var(--target-min);
   min-height: var(--target-min);
   color: var(--fg-muted);
-  background: color-mix(in oklab, var(--bg) 72%, transparent);
+  /* Stesso fondo delle frecce, stessa ragione: vedi il conto li sopra. */
+  background: color-mix(in oklab, var(--bg) 78%, transparent);
   border-radius: var(--radius);
   transition: color var(--duration-fast) var(--ease);
 }
@@ -246,9 +338,11 @@
    vedrebbe piu dov e arrivato.
 
    Le due percentuali qui sotto sono i colori di prima gia composti con quel
-   20%: 72% * 20% = 14,4%. **Confronto a pixel del 2026-08-17**, stesso
-   pulsante spento nei due modi sopra lo stesso sfondo: sul fondo del dialog lo
-   scarto massimo e 2/255, cioe niente. L equivalenza non e pero esatta ovunque,
+   20%: 78% * 20% = 15,6%. **Confronto a pixel del 2026-08-17**, fatto quando il
+   fondo era al 72% e quindi su 14,4% — alzarlo al 78% cambia allo stesso modo i
+   due termini, quindi il confronto regge: stesso pulsante spento nei due modi
+   sopra lo stesso sfondo, sul fondo del dialog lo scarto massimo e 2/255, cioe
+   niente. L equivalenza non e pero esatta ovunque,
    e vale sapere perche: con `opacity` l icona copriva il fondo del pulsante,
    qui lo lascia trasparire. Se il comando finisce sopra una zona chiara della
    fotografia lo scarto arriva a 23/255, ma solo sui 179 sottopixel del segno
@@ -257,7 +351,7 @@
 .zoomButton:disabled,
 .zoomButton[aria-disabled='true'] {
   color: color-mix(in oklab, var(--fg-muted) 20%, transparent);
-  background: color-mix(in oklab, var(--bg) 14.4%, transparent);
+  background: color-mix(in oklab, var(--bg) 15.6%, transparent);
   cursor: default;
 }
 

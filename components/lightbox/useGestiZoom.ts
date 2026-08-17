@@ -135,6 +135,21 @@ export function useGestiZoom({
     }
 
     function giu(event: PointerEvent) {
+      // Senza questo, col mouse il trascinamento muore dopo il primo
+      // spostamento: l `<img>` fa partire il trascinamento nativo del browser
+      // — quello che stacca l anteprima dell immagine dal puntatore per
+      // portarla altrove — e il browser chiude il nostro gesto con un
+      // `pointercancel`. **Misurato il 2026-08-17** a 1440x900: sei
+      // spostamenti da 30px muovevano la fotografia di 30 e non di 180, e la
+      // spia sugli eventi registrava pointerdown, pointermove, dragstart,
+      // pointercancel.
+      //
+      // preventDefault sul pointerdown e non `draggable={false}`
+      // sull immagine: quell attributo vive in SanityImage, che disegna anche
+      // le fotografie della galleria, dove il trascinamento nativo non da
+      // fastidio a nessuno. Qui il rimedio resta dentro la superficie della
+      // lightbox, cioe dentro il perimetro dove i gesti sono nostri.
+      event.preventDefault()
       puntatori.set(event.pointerId, { x: event.clientX, y: event.clientY })
       partenze.set(event.pointerId, { x: event.clientX, y: event.clientY })
       el!.setPointerCapture(event.pointerId)

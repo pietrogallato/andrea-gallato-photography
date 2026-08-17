@@ -42,6 +42,14 @@ export function Lightbox({
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const superficieRef = useRef<HTMLDivElement>(null)
+  // Tre elementi con tre mestieri diversi. La superficie raccoglie i gesti — e
+  // da ingranditi li raccoglie su tutto lo schermo, con lo pseudo-elemento che
+  // il CSS le stende sotto, altrimenti il dito sul nero attorno non sposterebbe
+  // nulla. La fotografia e la finestra in cui viene dipinta, ed e quella che il
+  // tetto misura. A ritagliare, da ingranditi, e il dialog: la fotografia esce
+  // dalla sua finestra e si ferma sui bordi dello schermo, quindi e li che si
+  // misura di quanto sborda.
+  const fotografiaRef = useRef<HTMLDivElement>(null)
   const photo = photos[index]
 
   const [loaded, setLoaded] = useState(false)
@@ -50,7 +58,7 @@ export function Lightbox({
   useScrollLock()
 
   const sizesDiRiposo = sizesForLightbox(photo.ar)
-  const zoom = useZoom({ id: photo.id, url: photo.url, riquadroRef: superficieRef, sizesDiRiposo })
+  const zoom = useZoom({ id: photo.id, url: photo.url, fotografiaRef, corniceRef: ref, sizesDiRiposo })
   const { inGesto } = useGestiZoom({ superficieRef, zoom })
 
   // Ogni cambio di fotografia riapre l'attesa. L'indicatore non compare
@@ -116,6 +124,11 @@ export function Lightbox({
       ref={ref}
       className={styles.dialog}
       aria-label={label}
+      // Ingrandendo, la fotografia esce dalla finestra che la ritagliava e a
+      // ritagliarla passa lo schermo. E un cambio di forma, quindi vive nel
+      // CSS: qui si dice soltanto in che stato siamo. Sul dialog e non sulla
+      // figure perche e il dialog stesso a diventare il ritaglio.
+      data-ingrandita={zoom.ingrandito ? 'true' : 'false'}
       // onCancel, non onClose. `cancel` scatta solo su una richiesta di
       // chiusura dell utente (Esc); `close` scatta per qualunque chiusura,
       // inclusa la nostra in fase di smontaggio. Collegare `close` fa
@@ -174,6 +187,7 @@ export function Lightbox({
           data-gesto={inGesto ? 'true' : 'false'}
         >
           <SanityImage
+            ref={fotografiaRef}
             photo={{ url: photo.url, aspectRatio: photo.ar, lqip: photo.lqip, alt: photo.alt, altLang: photo.altLang }}
             sizes={zoom.sizes}
             locale={locale}

@@ -107,8 +107,14 @@ tastiera sono sotto test in `e2e/zoom.spec.ts`. La pizzicata no, e non lo sarà.
 Su un telefono, aperta una fotografia in galleria:
 
 1. **pizzicare sulla fotografia** e verificare che si ingrandisca lei, non la pagina;
-2. **trascinare** e verificare che ci si sposti in tutte le direzioni senza che si aprano
-   fessure ai bordi;
+2. **trascinare** e verificare che ci si sposti in tutte le direzioni senza che la
+   fotografia si stacchi dai propri bordi, cioè senza che si possa trascinarla oltre il
+   punto in cui il suo bordo entra in scena.
+
+   Attenzione a non scambiare per un difetto ciò che non lo è: da ingranditi la cornice
+   è tutto lo schermo, e finché l'ingrandimento non basta a coprirlo resta del nero sopra
+   e sotto — una quadrata su un telefono lo copre da 2,2× in su. Il nero che si muove
+   insieme alla fotografia è un difetto; il nero fermo ai lati non lo è;
 3. **doppio tocco** e verificare che porti al doppio e che un secondo doppio tocco torni
    a schermo intero;
 4. **pizzicare sulla didascalia**, fuori dalla fotografia, e verificare che lì ingrandisca
