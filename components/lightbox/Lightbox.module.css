@@ -44,17 +44,53 @@
   touch-action: pan-y pinch-zoom;
 }
 
+/* La superficie e cio che si misura, cio che riceve i gesti e cio che porta le
+   variabili dell ingrandimento. Il ritaglio invece resta al contenitore di
+   SanityImage, che ha gia overflow: hidden e il rapporto giusto. */
+.superficie {
+  width: min(100%, calc(78dvh * var(--ar)));
+  max-height: 78dvh;
+  /* `none` solo qui: la pizzicata su questa superficie e nostra. Su didascalia,
+     pulsanti e margini resta quella del browser, che ingrandisce la pagina ed e
+     il modo con cui chi ci vede poco legge una didascalia piccola (WCAG 1.4.4).
+     Il perimetro e la ragione per cui la deroga e accettabile. */
+  touch-action: none;
+}
+
+.superficie:active {
+  cursor: grabbing;
+}
+
 /* Il contenitore di SanityImage contiene solo un immagine in posizione
    assoluta, quindi non ha larghezza intrinseca: dentro un grid centrato
    collasserebbe a zero, e con esso l altezza derivata da aspect-ratio.
-   La larghezza va quindi derivata dal rapporto e dall altezza massima. */
+   Riempie la superficie, che la larghezza ce l ha. */
 .image {
-  width: min(100%, calc(78dvh * var(--ar)));
-  max-height: 78dvh;
+  width: 100%;
   /* La fotografia sale di poco entrando: il movimento e appena percettibile
      ma toglie alla lightbox l aria di finestra che compare di colpo. */
   animation: reveal var(--duration-slow) var(--ease-out) both;
   animation-delay: 40ms;
+}
+
+/* L ingrandimento vive qui, sull immagine, e non sul contenitore: quello ha
+   l animazione d entrata con fill-mode `both`, che tiene sequestrata la
+   proprieta transform. **Misurato in Chromium 148:** uno scale() inline su
+   quell elemento da una computed transform pari all identita, cioe non entra
+   mai in vigore.
+
+   Una transizione CSS, non un animazione in JavaScript: la regola globale di
+   prefers-reduced-motion azzera le durate CSS, e non saprebbe fermare un
+   requestAnimationFrame. */
+.superficie img {
+  transform: translate(var(--pan-x, 0px), var(--pan-y, 0px)) scale(var(--zoom, 1));
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+/* Durante il gesto la transizione va tolta, altrimenti l immagine insegue il
+   dito con un ritardo costante e sembra scollata. */
+.superficie[data-gesto='true'] img {
+  transition: none;
 }
 
 .close,
@@ -157,4 +193,77 @@
     transform: none;
     background: var(--fg-muted);
   }
+}
+
+.zoom {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  display: flex;
+  gap: var(--space-2);
+  z-index: 2;
+}
+
+.zoomButton {
+  display: grid;
+  place-items: center;
+  /* Stessa area minima dei tre pulsanti gia presenti: un bersaglio piu piccolo
+     accanto a tre che rispettano il minimo e una incoerenza visibile prima
+     ancora che un problema di accessibilita. */
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  color: var(--fg-muted);
+  background: color-mix(in oklab, var(--bg) 72%, transparent);
+  border-radius: var(--radius);
+  transition: color var(--duration-fast) var(--ease);
+}
+
+/* Il pulsante spento non si illumina al passaggio: `disabled` lo escludeva da
+   solo, aria-disabled va escluso a mano, altrimenti prometterebbe un comando
+   che non c e piu. */
+.zoomButton:hover:not([aria-disabled='true']) {
+  color: var(--fg);
+}
+
+.zoomButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  color: var(--fg);
+}
+
+/* Al tetto il comando resta un pulsante vero, solo inerte: si spegne con
+   aria-disabled e non con `disabled`, che gli toglierebbe il fuoco sotto le
+   dita di chi lo sta premendo da tastiera. Lo stile spento pero e lo stesso,
+   perche a vedersi il significato non cambia.
+
+   Spento con i colori e non con `opacity`, che e invece quel che fanno le
+   frecce qui sopra. La differenza sta proprio nel fuoco: `opacity` sbiadisce
+   l elemento intero, contorno del fuoco compreso, e questo pulsante — a
+   differenza delle frecce, che sono `disabled` vere e il fuoco non lo ricevono
+   mai — resta nel giro del Tab. Al 20% sopra lo sfondo del dialog il contorno
+   #7fb2ff diventa rgb(32,42,59): 1,4:1 di contrasto, contro i 3:1 che WCAG
+   1.4.11 chiede a un indicatore di fuoco, e chi naviga da tastiera non
+   vedrebbe piu dov e arrivato.
+
+   Le due percentuali qui sotto sono i colori di prima gia composti con quel
+   20%: 72% * 20% = 14,4%. **Confronto a pixel del 2026-08-17**, stesso
+   pulsante spento nei due modi sopra lo stesso sfondo: sul fondo del dialog lo
+   scarto massimo e 2/255, cioe niente. L equivalenza non e pero esatta ovunque,
+   e vale sapere perche: con `opacity` l icona copriva il fondo del pulsante,
+   qui lo lascia trasparire. Se il comando finisce sopra una zona chiara della
+   fotografia lo scarto arriva a 23/255, ma solo sui 179 sottopixel del segno
+   su 7744, cioe i tratti del piu — su un icona gia sbiadita all 80% non e
+   distinguibile, ed e il prezzo di avere un contorno del fuoco che si vede. */
+.zoomButton:disabled,
+.zoomButton[aria-disabled='true'] {
+  color: color-mix(in oklab, var(--fg-muted) 20%, transparent);
+  background: color-mix(in oklab, var(--bg) 14.4%, transparent);
+  cursor: default;
+}
+
+/* La seconda barra: identica a vedersi a quella dell attesa, ma guidata da uno
+   stato suo. Riusare quello dell attesa dichiarerebbe occupata, con aria-busy,
+   una fotografia che si sta guardando benissimo. */
+.loaderZoom {
+  composes: loader;
 }

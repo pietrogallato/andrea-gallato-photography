@@ -7,7 +7,10 @@ import type { GalleryPhoto } from '@/components/gallery/types'
 import { SanityImage } from '@/components/media/SanityImage'
 import { sizesForLightbox } from '@/lib/lightbox/sizes'
 import { LightboxCaption } from './LightboxCaption'
+import { ZoomControls } from './ZoomControls'
 import { useScrollLock } from './useScrollLock'
+import { useZoom } from './useZoom'
+import { useGestiZoom } from './useGestiZoom'
 import styles from './Lightbox.module.css'
 
 /**
@@ -18,6 +21,9 @@ import styles from './Lightbox.module.css'
  * invece, senza un segnale sembrerebbe che il tasto non abbia funzionato.
  */
 const INDICATOR_DELAY_MS = 300
+
+/** Di quanto spostano le frecce a fotografia ingrandita, in pixel CSS. */
+const PASSO_FRECCIA_PX = 60
 
 export function Lightbox({
   photos,
@@ -35,12 +41,17 @@ export function Lightbox({
   onNavigate: (next: number) => void
 }) {
   const ref = useRef<HTMLDialogElement>(null)
+  const superficieRef = useRef<HTMLDivElement>(null)
   const photo = photos[index]
 
   const [loaded, setLoaded] = useState(false)
   const [waitedEnough, setWaitedEnough] = useState(false)
 
   useScrollLock()
+
+  const sizesDiRiposo = sizesForLightbox(photo.ar)
+  const zoom = useZoom({ id: photo.id, url: photo.url, riquadroRef: superficieRef, sizesDiRiposo })
+  const { inGesto } = useGestiZoom({ superficieRef, zoom })
 
   // Ogni cambio di fotografia riapre l'attesa. L'indicatore non compare
   // subito: sotto la soglia il caricamento e gia finito, e farlo lampeggiare
@@ -60,17 +71,45 @@ export function Lightbox({
     }
   }, [])
 
+  // Un solo listener per i tasti: aggiungerne un secondo per lo zoom farebbe
+  // agire le frecce due volte.
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
+      // Ctrl e Cmd sono l'ingrandimento del browser, che WCAG 1.4.4 pretende
+      // resti disponibile. Non si intercetta e non si annulla.
+      if (event.ctrlKey || event.metaKey) return
+
+      if (event.key === '+' || event.key === '=') return zoom.ingrandisci()
+      if (event.key === '-') return zoom.riduci()
+      if (event.key === '0') return zoom.azzera()
+
+      // Lo stesso tasto ha due significati, ma i due stati sono visibilmente
+      // diversi: a riposo la fotografia sta tutta dentro lo schermo, ingrandita
+      // no, e le frecce disegnate sono sparite.
+      if (zoom.ingrandito) {
+        if (event.key === 'ArrowRight') return zoom.sposta({ x: -PASSO_FRECCIA_PX, y: 0 })
+        if (event.key === 'ArrowLeft') return zoom.sposta({ x: PASSO_FRECCIA_PX, y: 0 })
+        if (event.key === 'ArrowDown') return zoom.sposta({ x: 0, y: -PASSO_FRECCIA_PX })
+        if (event.key === 'ArrowUp') return zoom.sposta({ x: 0, y: PASSO_FRECCIA_PX })
+        return
+      }
+
       if (event.key === 'ArrowRight' && index < photos.length - 1) onNavigate(index + 1)
       if (event.key === 'ArrowLeft' && index > 0) onNavigate(index - 1)
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [index, photos.length, onNavigate])
+  }, [index, photos.length, onNavigate, zoom])
 
   const position = `${index + 1} / ${photos.length}`
   const label = photo.title ? `${photo.title} — ${position}` : `${dict.lightboxLabel} — ${position}`
+
+  const variabili = {
+    '--ar': String(photo.ar),
+    '--zoom': String(zoom.livello),
+    '--pan-x': `${zoom.pan.x}px`,
+    '--pan-y': `${zoom.pan.y}px`,
+  } as React.CSSProperties
 
   return (
     <dialog
@@ -84,7 +123,18 @@ export function Lightbox({
       // monta due volte: effect apre, cleanup chiama close() accodando
       // l evento, il secondo effect riapre, e l evento accodato arriva e
       // chiude tutto. E il lampo che si vede cliccando una fotografia.
-      onCancel={onClose}
+      //
+      // `cancel` e annullabile, ed e cio che rende possibile Esc a due tempi
+      // senza spostarsi su un keydown parallelo: da ingranditi si torna a
+      // schermo intero, e solo da li si chiude.
+      onCancel={(event) => {
+        if (zoom.ingrandito) {
+          event.preventDefault()
+          zoom.azzera()
+          return
+        }
+        onClose()
+      }}
     >
       <div role="status" aria-live="polite" className="visually-hidden">
         {position}
@@ -110,40 +160,66 @@ export function Lightbox({
         />
       ) : null}
 
+      {/* La barra del secondo scaricamento e muta: in quel momento non si sta
+          aspettando nulla, si sta per ricevere qualcosa di meglio. Dichiararlo
+          con aria-busy direbbe che la fotografia non e disponibile mentre la
+          si sta guardando benissimo. */}
+      {zoom.attesa ? <div className={styles.loaderZoom} aria-hidden="true" /> : null}
+
       <figure className={styles.figure} aria-busy={!loaded}>
-        <SanityImage
-          photo={{ url: photo.url, aspectRatio: photo.ar, lqip: photo.lqip, alt: photo.alt, altLang: photo.altLang }}
-          sizes={sizesForLightbox(photo.ar)}
-          locale={locale}
-          className={styles.image}
-          onLoad={() => setLoaded(true)}
-        />
-        <LightboxCaption photo={photo} locale={locale} />
+        <div
+          ref={superficieRef}
+          className={styles.superficie}
+          style={variabili}
+          data-gesto={inGesto ? 'true' : 'false'}
+        >
+          <SanityImage
+            photo={{ url: photo.url, aspectRatio: photo.ar, lqip: photo.lqip, alt: photo.alt, altLang: photo.altLang }}
+            sizes={zoom.sizes}
+            locale={locale}
+            className={styles.image}
+            onLoad={() => setLoaded(true)}
+          />
+        </div>
+        {zoom.ingrandito ? null : <LightboxCaption photo={photo} locale={locale} />}
       </figure>
 
-      <button
-        type="button"
-        className={styles.prev}
-        onClick={() => onNavigate(index - 1)}
-        disabled={index === 0}
-      >
-        <span className="visually-hidden">{dict.lightboxPrev}</span>
-        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" strokeWidth="1.25">
-          <path d="M15 4l-9 8 9 8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
+      {zoom.ingrandito ? null : (
+        <>
+          <button
+            type="button"
+            className={styles.prev}
+            onClick={() => onNavigate(index - 1)}
+            disabled={index === 0}
+          >
+            <span className="visually-hidden">{dict.lightboxPrev}</span>
+            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" strokeWidth="1.25">
+              <path d="M15 4l-9 8 9 8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
 
-      <button
-        type="button"
-        className={styles.next}
-        onClick={() => onNavigate(index + 1)}
-        disabled={index === photos.length - 1}
-      >
-        <span className="visually-hidden">{dict.lightboxNext}</span>
-        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" strokeWidth="1.25">
-          <path d="M9 4l9 8-9 8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
+          <button
+            type="button"
+            className={styles.next}
+            onClick={() => onNavigate(index + 1)}
+            disabled={index === photos.length - 1}
+          >
+            <span className="visually-hidden">{dict.lightboxNext}</span>
+            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" strokeWidth="1.25">
+              <path d="M9 4l9 8-9 8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </>
+      )}
+
+      <ZoomControls
+        dict={dict}
+        ingrandito={zoom.ingrandito}
+        alTetto={zoom.alTetto}
+        onIngrandisci={zoom.ingrandisci}
+        onRiduci={zoom.riduci}
+        onAzzera={zoom.azzera}
+      />
     </dialog>
   )
 }

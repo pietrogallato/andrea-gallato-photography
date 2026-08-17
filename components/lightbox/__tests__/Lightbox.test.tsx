@@ -226,3 +226,158 @@ describe('Lightbox, stato di caricamento', () => {
     }
   })
 })
+
+describe('Lightbox, ingrandimento', () => {
+  function montaConRiquadro(index = 0, onClose = vi.fn(), onNavigate = vi.fn()) {
+    render(
+      <Lightbox
+        photos={photos}
+        index={index}
+        locale="it"
+        dict={dict}
+        onClose={onClose}
+        onNavigate={onNavigate}
+      />,
+    )
+    // jsdom non fa layout: senza un riquadro finto ogni conto sarebbe degenere
+    // e il livello non salirebbe mai sopra 1.
+    const superficie = document.querySelector('dialog figure > div') as HTMLElement
+    superficie.getBoundingClientRect = () =>
+      ({ width: 800, height: 600, left: 0, top: 0, right: 800, bottom: 600, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    return { onClose, onNavigate, superficie }
+  }
+
+  it('espone il comando per ingrandire, unico modo da tastiera', () => {
+    montaConRiquadro()
+    expect(screen.getByRole('button', { name: dict.lightboxZoomIn })).toBeInTheDocument()
+  })
+
+  it('da ingranditi ritira frecce e didascalia', async () => {
+    montaConRiquadro(0)
+    expect(screen.getByRole('button', { name: dict.lightboxNext })).toBeInTheDocument()
+    expect(screen.getByText('Nebbia')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+
+    // Ritirate, non nascoste a meta: mostrare una freccia mentre la stessa
+    // freccia della tastiera fa un altra cosa e una interfaccia che si smentisce.
+    expect(screen.queryByRole('button', { name: dict.lightboxNext })).toBeNull()
+    expect(screen.queryByText('Nebbia')).toBeNull()
+  })
+
+  it('a riposo le frecce navigano', async () => {
+    const { onNavigate } = montaConRiquadro(0)
+    await userEvent.keyboard('{ArrowRight}')
+    expect(onNavigate).toHaveBeenCalledWith(1)
+  })
+
+  it('da ingranditi le frecce non navigano piu: spostano', async () => {
+    const { onNavigate } = montaConRiquadro(0)
+    await userEvent.click(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+    await userEvent.keyboard('{ArrowRight}')
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+
+  it('non tocca le frecce quando c e un modificatore: quello e il browser', async () => {
+    const { onNavigate } = montaConRiquadro(0)
+    await userEvent.keyboard('{Meta>}{ArrowRight}{/Meta}')
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+
+  it('il tasto + ingrandisce e il tasto 0 riporta a schermo intero', async () => {
+    montaConRiquadro(0)
+    await userEvent.keyboard('+')
+    expect(screen.getByRole('button', { name: dict.lightboxZoomReset })).toBeInTheDocument()
+    await userEvent.keyboard('0')
+    expect(screen.queryByRole('button', { name: dict.lightboxZoomReset })).toBeNull()
+  })
+
+  it('accetta = oltre a +, perche su parecchi layout + richiede Shift', async () => {
+    montaConRiquadro(0)
+    await userEvent.keyboard('=')
+    expect(screen.getByRole('button', { name: dict.lightboxZoomReset })).toBeInTheDocument()
+  })
+
+  it('cambiando fotografia torna a schermo intero', async () => {
+    const { rerender } = render(
+      <Lightbox photos={photos} index={0} locale="it" dict={dict} onClose={vi.fn()} onNavigate={vi.fn()} />,
+    )
+    const superficie = document.querySelector('dialog figure > div') as HTMLElement
+    superficie.getBoundingClientRect = () =>
+      ({ width: 800, height: 600, left: 0, top: 0, right: 800, bottom: 600, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+
+    await userEvent.click(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+    expect(screen.getByRole('button', { name: dict.lightboxZoomReset })).toBeInTheDocument()
+
+    rerender(
+      <Lightbox photos={photos} index={1} locale="it" dict={dict} onClose={vi.fn()} onNavigate={vi.fn()} />,
+    )
+    expect(screen.queryByRole('button', { name: dict.lightboxZoomReset })).toBeNull()
+  })
+
+  /**
+   * Cambiando stato spariscono dei comandi: le frecce quando si ingrandisce,
+   * «riduci» e «torna a schermo intero» quando si torna indietro. Se a sparire
+   * e proprio quello che ha il fuoco, il fuoco finisce sul body e il Tab
+   * successivo, dentro un dialog modale, riparte dal primo comando — che qui e
+   * la chiusura. E lo stesso difetto che il pulsante al tetto evita con
+   * `aria-disabled`: chi naviga da tastiera si ritroverebbe a un tasto dal
+   * chiudere per sbaglio la fotografia che stava guardando, senza un annuncio.
+   * «Ingrandisci» resta montato in tutti e due gli stati, ed e li che il fuoco
+   * deve atterrare.
+   */
+  it('tornando a schermo intero il fuoco non cade sul body', async () => {
+    montaConRiquadro(0)
+    await userEvent.click(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+
+    const torna = screen.getByRole('button', { name: dict.lightboxZoomReset })
+    torna.focus()
+    await userEvent.click(torna)
+
+    expect(torna).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+  })
+
+  it('riducendo fino a schermo intero il fuoco non cade sul body', async () => {
+    montaConRiquadro(0)
+    await userEvent.click(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+
+    const riduci = screen.getByRole('button', { name: dict.lightboxZoomOut })
+    riduci.focus()
+    await userEvent.click(riduci)
+
+    expect(riduci).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+  })
+
+  it('ingrandendo dalla freccia il fuoco non cade sul body', async () => {
+    montaConRiquadro(0)
+    screen.getByRole('button', { name: dict.lightboxNext }).focus()
+    await userEvent.keyboard('+')
+
+    expect(screen.queryByRole('button', { name: dict.lightboxNext })).toBeNull()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+  })
+
+  /**
+   * Il fuoco si sposta solo per rimediare a un comando che e sparito da sotto.
+   * Un gesto sulla fotografia non deve strapparlo a chi lo teneva altrove: chi
+   * sta per premere «chiudi» lo troverebbe cambiato sotto le dita.
+   */
+  it('un gesto non porta via il fuoco a un comando che resta', async () => {
+    montaConRiquadro(0)
+    const chiudi = screen.getByRole('button', { name: dict.lightboxClose })
+    chiudi.focus()
+
+    await userEvent.keyboard('+')
+
+    expect(document.activeElement).toBe(chiudi)
+  })
+
+  it('resta una sola regione live, che dice la posizione', async () => {
+    montaConRiquadro(0)
+    await userEvent.click(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+    // getByRole fallisce con "found multiple elements" se ne compare una seconda.
+    expect(screen.getByRole('status')).toHaveTextContent('1')
+  })
+})

@@ -97,7 +97,12 @@ test('mostra la fotografia a dimensione utile, dentro il viewport', async ({ pag
 
   const misure = await page.evaluate(() => {
     const img = document.querySelector('dialog img') as HTMLImageElement
-    const r = img.getBoundingClientRect()
+    // Il rettangolo da misurare e quello del contenitore, non dell immagine:
+    // da ingranditi l immagine e piu grande del riquadro per costruzione, ed e
+    // il ritaglio a tenerla dentro. Misurare l <img> farebbe fallire il test
+    // per un comportamento voluto.
+    const riquadro = img.closest('figure > div') as HTMLElement
+    const r = riquadro.getBoundingClientRect()
     return {
       w: r.width,
       h: r.height,

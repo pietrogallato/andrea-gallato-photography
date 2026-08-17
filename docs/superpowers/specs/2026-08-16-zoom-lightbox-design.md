@@ -116,6 +116,13 @@ raggiunto e si chiede **quel** gradino, mai più di quello: chi ingrandisce poco
 Il browser trova il file in cache e cambia candidato senza un istante di vuoto. La
 fotografia che si sta guardando resta dipinta per tutto il tempo.
 
+Perché questo funzioni, l'URL precaricata dev'essere **identica**, carattere per carattere, a
+quella che il `srcset` chiederà: nasce quindi dallo stesso loader di `next/image`
+(`sanityImageLoader`), non da una chiamata a mano a `buildImageUrl`. È il loader ad
+aggiungere la qualità tarata (`q=80`), e un URL senza quel parametro è un file diverso sotto
+un'altra chiave di cache: il browser andrebbe comunque in rete dopo aver alzato il `sizes`, e
+il precarico avrebbe soltanto raddoppiato i byte.
+
 Due cose che questo meccanismo **non** deve fare, entrambe già costate una regressione:
 
 - **mai cambiare la `key`** dell'immagine. `SanityImage` porta `key={photo.url}` per
