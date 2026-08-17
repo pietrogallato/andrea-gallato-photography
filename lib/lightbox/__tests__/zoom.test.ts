@@ -48,10 +48,10 @@ describe('limitaSpostamento', () => {
   // fotografia. E il caso in cui il vecchio conto e quello nuovo danno lo
   // stesso risultato.
   const fotografia = { larghezza: 800, altezza: 600 }
-  const superficie = fotografia
+  const cornice = fotografia
 
   it('a riposo non lascia spostare di un pixel', () => {
-    expect(limitaSpostamento({ pan: { x: 50, y: 50 }, livello: 1, fotografia, superficie })).toEqual({
+    expect(limitaSpostamento({ pan: { x: 50, y: 50 }, livello: 1, fotografia, cornice })).toEqual({
       x: 0,
       y: 0,
     })
@@ -59,14 +59,14 @@ describe('limitaSpostamento', () => {
 
   it('lascia passare uno spostamento dentro i limiti', () => {
     // A livello 2 la meta che sborda vale 400 in orizzontale e 300 in verticale.
-    expect(limitaSpostamento({ pan: { x: 120, y: -80 }, livello: 2, fotografia, superficie })).toEqual({
+    expect(limitaSpostamento({ pan: { x: 120, y: -80 }, livello: 2, fotografia, cornice })).toEqual({
       x: 120,
       y: -80,
     })
   })
 
   it('taglia lo spostamento che aprirebbe una fessura', () => {
-    expect(limitaSpostamento({ pan: { x: 999, y: -999 }, livello: 2, fotografia, superficie })).toEqual({
+    expect(limitaSpostamento({ pan: { x: 999, y: -999 }, livello: 2, fotografia, cornice })).toEqual({
       x: 400,
       y: -300,
     })
@@ -78,7 +78,7 @@ describe('limitaSpostamento', () => {
         pan: { x: 10, y: 10 },
         livello: 3,
         fotografia: { larghezza: 0, altezza: 0 },
-        superficie: { larghezza: 0, altezza: 0 },
+        cornice: { larghezza: 0, altezza: 0 },
       }),
     ).toEqual({ x: 0, y: 0 })
   })
@@ -96,7 +96,7 @@ describe('limitaSpostamento', () => {
         pan: { x: 999, y: 999 },
         livello: 1.6,
         fotografia: { larghezza: 900, altezza: 900 },
-        superficie: { larghezza: 1440, altezza: 900 },
+        cornice: { larghezza: 1440, altezza: 900 },
       }),
     ).toEqual({ x: 0, y: 270 })
   })
@@ -113,7 +113,7 @@ describe('limitaSpostamento', () => {
         pan: { x: 300, y: 200 },
         livello: 2,
         fotografia: { larghezza: 412, altezza: 412 },
-        superficie: { larghezza: 412, altezza: 915 },
+        cornice: { larghezza: 412, altezza: 915 },
       }),
     ).toEqual({ x: 206, y: 0 })
   })

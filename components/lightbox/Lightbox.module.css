@@ -49,13 +49,15 @@
 }
 
 /* La superficie e cio che riceve i gesti e cio che porta le variabili
-   dell ingrandimento. A riposo il ritaglio non e suo: resta al contenitore di
-   SanityImage, che ha gia overflow: hidden e il rapporto giusto. Da ingranditi
-   invece il ritaglio passa di qui — vedi le regole di `data-ingrandita`.
+   dell ingrandimento. Il ritaglio non e suo in nessuno dei due stati: a riposo
+   e del contenitore di SanityImage, che ha gia overflow: hidden e il rapporto
+   giusto; da ingranditi e del dialog, che e lo schermo — vedi le regole di
+   `data-ingrandita`.
 
-   Cio che si misura, invece, non e piu la superficie ma la fotografia dentro:
-   da ingranditi le due si separano, e il tetto e i limiti dello spostamento
-   parlano dei pixel dipinti. */
+   La sua misura e quella della fotografia dipinta: `.image` la riempie in
+   larghezza e ne eredita l altezza dal rapporto. Cio che si misura per i conti
+   dell ingrandimento, pero, e il contenitore di SanityImage, che e l unico a
+   coincidere con la fotografia per definizione e non per conseguenza. */
 .superficie {
   width: min(100%, calc(86dvh * var(--ar)));
   max-height: 86dvh;
@@ -102,53 +104,59 @@
   transition: none;
 }
 
-/* Ingranditi: la cornice diventa lo schermo.
+/* Ingranditi: a crescere e la fotografia, non la finestra.
    ------------------------------------------------------------------
    A riposo il riquadro che ritaglia ha la forma della fotografia, e va bene:
-   attorno c e il nero e la didascalia. Ingrandendo quel riquadro diventava una
-   finestra dentro cui il contenuto cresceva senza che la finestra crescesse
-   mai — si moltiplicavano i pixel dentro gli stessi 702x702 su uno schermo da
-   1440x900. Qui il ritaglio si sposta sulla superficie, che prende tutto lo
-   schermo: appena l ingrandimento supera il punto in cui la fotografia copre
-   il viewport, tutto il viewport e fotografia, e lo spostamento la percorre
-   per intero.
+   attorno c e il nero e la didascalia. Ingrandendo, pero, quel riquadro era una
+   prigione: il contenuto cresceva senza che la finestra crescesse mai — si
+   moltiplicavano i pixel dentro gli stessi 702x702 su uno schermo da 1440x900.
 
-   Le tre regole sono una cosa sola: la figure smette di riservare margini, la
-   superficie diventa il viewport e ritaglia, e il contenitore della fotografia
-   smette di ritagliare — se continuasse, l ingrandimento resterebbe imprigionato
-   nei suoi bordi e non si vedrebbe alcuna differenza. */
-.dialog[data-ingrandita='true'] .figure {
-  padding: 0;
-  max-width: none;
-  /* Altezza esplicita, non `max-height`: la figure e un elemento di griglia
-     non stirato, quindi si dimensionerebbe sul contenuto e il `height: 100%`
-     della superficie qui sotto non avrebbe nulla su cui appoggiarsi. */
-  height: 100dvh;
-  max-height: none;
-}
+   Il primo rimedio era stato gonfiare la finestra fino al viewport. Gonfiandola
+   pero cambiava anche la larghezza con cui la fotografia viene dipinta, e quel
+   cambio si aggiungeva tutto insieme al primo micro-ingrandimento: **misurato il
+   2026-08-17** a 1440x900, la pizzicata da trackpad piu piccola possibile
+   (livello 1,0040, cioe +0,40%) faceva passare la fotografia da 774 a 903,6
+   pixel sullo schermo, il 16,7% in piu, con l angolo in alto a sinistra
+   spostato di 65px a sinistra e 40px in alto in un fotogramma.
 
-.dialog[data-ingrandita='true'] .superficie {
-  width: 100%;
-  height: 100%;
-  max-height: none;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-}
+   Qui la finestra resta quella che e — la fotografia si dipinge sempre alla
+   stessa larghezza, in tutti e due gli stati — e a ritagliare, da ingranditi,
+   passa il dialog, che e gia il viewport e ha gia overflow: hidden. Il livello
+   diventa cosi l unica cosa che cambia: la fotografia sullo schermo e larghezza
+   di riposo per livello, e basta. Ne discendono due cose che prima non erano
+   vere: il tetto non ha bisogno di essere rimisurato attraversando il confine,
+   e il punto fisso della pizzicata — che compone i soli livelli — resta esatto.
+
+   Resta un movimento, ed e voluto: la didascalia si ritira, e la fotografia si
+   ricentra sullo schermo. Sono 24,8px in verticale a 1440x900, senza cambio di
+   dimensione — la didascalia che se ne va, non un salto di scala. */
 
 /* Selettore composto e non `.image` da solo: `overflow` qui contraddice quello
    del wrapper di SanityImage, che ha la stessa specificita di una classe. Fra
    due regole pari vincerebbe l ordine dei fogli nel bundle, che non e nostro
-   da decidere. */
+   da decidere. Senza questa riga l ingrandimento resterebbe imprigionato nei
+   bordi del wrapper e non si vedrebbe alcuna differenza. */
 .dialog[data-ingrandita='true'] .image {
   overflow: visible;
-  /* La fotografia piu grande che sta nel viewport conservando il rapporto: la
-     stessa espressione della superficie a riposo, senza piu il margine.
-     `height` resta all `aspect-ratio` che il wrapper porta gia, cosi quando a
-     stringere e la larghezza il rapporto non si spezza — con un altezza fissa
-     al 100% una verticale su uno schermo largo si ritroverebbe ritagliata dal
-     `cover` gia prima di aver ingrandito. */
-  width: min(100%, calc(100dvh * var(--ar)));
+}
+
+/* Il riquadro invisibile che raccoglie i gesti su tutto lo schermo.
+   Da ingranditi la fotografia esce dalla sua finestra, e il dito che la
+   trascina non ha motivo di restare dentro quel rettangolo: senza questo, un
+   trascinamento cominciato sul nero attorno non sposterebbe nulla.
+
+   Uno pseudo-elemento e non un elemento vero: non ha niente da dire ne alla
+   struttura ne all albero di accessibilita. Sta sotto la fotografia — stessa
+   fase di disegno, ma prima nell ordine dell albero — e sotto i comandi, che
+   portano z-index: 2; i suoi eventi arrivano comunque alla superficie, che
+   resta il bersaglio, quindi i gestori sono quelli di sempre.
+   `touch-action` va ripetuto perche non si eredita: senza, il dito sullo
+   sfondo scorrerebbe la pagina invece di spostare la fotografia. */
+.dialog[data-ingrandita='true'] .superficie::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  touch-action: none;
 }
 
 /* Il fondo semitrasparente non e decorazione: con il margine laterale sceso a

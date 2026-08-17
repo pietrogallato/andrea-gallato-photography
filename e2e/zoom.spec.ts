@@ -141,31 +141,43 @@ test('al tetto il comando spento non smorza il contorno del fuoco', async ({ pag
  * Il punto di tutta la modifica, in un test solo.
  *
  * Prima, ingrandire moltiplicava i pixel dentro una finestra che non cresceva
- * mai: su uno schermo 1440x900 la superficie restava 702x702 — il 38% — sia a
- * riposo sia al massimo dell ingrandimento. Ora quella finestra, quando si
- * ingrandisce, diventa lo schermo.
+ * mai: su uno schermo 1440x900 il ritaglio restava 702x702 — il 38% — sia a
+ * riposo sia al massimo dell ingrandimento. Ora la finestra resta quella che e
+ * — la fotografia si dipinge sempre alla stessa larghezza, ed e cio che toglie
+ * il salto al primo scatto — ma smette di ritagliare: a ritagliare e lo
+ * schermo, e la fotografia lo copre tutto.
  *
- * Si misura il rettangolo e non la classe CSS: una regola puo esserci ed
+ * Si misurano i rettangoli e non le classi CSS: una regola puo esserci ed
  * essere scavalcata, e allora il test direbbe di si mentre l utente vede di no.
  */
-test('ingrandendo, la cornice che ritaglia diventa il viewport', async ({ page }) => {
+test('ingrandendo, la fotografia esce dalla sua finestra e copre lo schermo', async ({ page }) => {
   await apriPrima(page)
-  const superficie = page.locator('dialog figure > div')
+  await senzaTransizione(page)
   const schermo = page.viewportSize()!
 
-  const riposo = (await superficie.boundingBox())!
-  expect(riposo.width).toBeLessThan(schermo.width)
-  expect(riposo.height).toBeLessThan(schermo.height)
+  const riposo = await bordiFotografia(page)
+  expect(riposo.destro - riposo.sinistro).toBeLessThan(schermo.width)
+  expect(riposo.basso - riposo.alto).toBeLessThan(schermo.height)
 
-  await page.getByRole('button', { name: 'Ingrandisci la fotografia' }).click()
+  for (let i = 0; i < 12; i += 1) await page.keyboard.press('+')
+  await expect(page.getByRole('button', { name: 'Ingrandisci la fotografia' })).toHaveAttribute(
+    'aria-disabled',
+    'true',
+  )
 
-  const ingrandita = (await superficie.boundingBox())!
-  // Tolleranza di un pixel: le altezze in dvh arrivano con dei decimali, e un
-  // arrotondamento non e la differenza che questo test vuole cogliere.
-  expect(Math.abs(ingrandita.width - schermo.width)).toBeLessThanOrEqual(1)
-  expect(Math.abs(ingrandita.height - schermo.height)).toBeLessThanOrEqual(1)
-  expect(ingrandita.x).toBeLessThanOrEqual(1)
-  expect(ingrandita.y).toBeLessThanOrEqual(1)
+  // La finestra e rimasta piccola: e la fotografia a essere uscita. Se il
+  // ritaglio fosse ancora suo, questi due fatti non potrebbero coesistere.
+  const finestra = await page.evaluate(() => {
+    const r = (document.querySelector('dialog figure > div > div') as HTMLElement).getBoundingClientRect()
+    return { larghezza: r.width, altezza: r.height }
+  })
+  expect(finestra.larghezza).toBeLessThan(schermo.width)
+
+  const dopo = await bordiFotografia(page)
+  expect(dopo.sinistro).toBeLessThanOrEqual(1)
+  expect(dopo.alto).toBeLessThanOrEqual(1)
+  expect(dopo.destro).toBeGreaterThanOrEqual(schermo.width - 1)
+  expect(dopo.basso).toBeGreaterThanOrEqual(schermo.height - 1)
 })
 
 /**
@@ -444,6 +456,108 @@ test('i comandi sovrapposti restano leggibili anche sopra il bianco', async ({ p
     const [chiaro, scuro] = [luminanza(misura.fondo), luminanza(misura.tratto)].sort((a, b) => b - a)
     expect((chiaro + 0.05) / (scuro + 0.05)).toBeGreaterThanOrEqual(3)
   }
+})
+
+/**
+ * Il confine fra i due stati non deve sentirsi.
+ *
+ * Il livello e continuo, e la cornice deve esserlo con lui. **Misurato il
+ * 2026-08-17** a 1440x900 prima del rimedio: la pizzicata da trackpad piu
+ * piccola possibile — ctrl + rotella con deltaY -1 — alzava il livello dello
+ * 0,40% e la fotografia sullo schermo passava da 774 a 903,6 pixel, il 16,7%
+ * in piu, con l angolo in alto a sinistra spostato di 65px. Il fattore fra le
+ * due geometrie si aggiungeva tutto insieme al primo micro-ingrandimento.
+ *
+ * In verticale resta uno scarto: entrando nell ingrandimento la didascalia si
+ * ritira e la fotografia si ricentra sullo schermo — 24,8px a 1440x900, senza
+ * cambiare dimensione. E il movimento della didascalia che se ne va, non un
+ * salto di scala, e per questo qui si misurano la larghezza e il centro
+ * orizzontale.
+ */
+test('il primo scatto di ingrandimento non fa saltare la fotografia', async ({ page, isMobile }) => {
+  test.skip(!!isMobile, 'la rotella non esiste sul mobile, e Playwright non la emula')
+
+  await apriPrima(page)
+  await senzaTransizione(page)
+  const schermo = page.viewportSize()!
+  const prima = await bordiFotografia(page)
+
+  await page.mouse.move(schermo.width / 2, schermo.height / 2)
+  await page.keyboard.down('Control')
+  await page.mouse.wheel(0, -1)
+  await page.keyboard.up('Control')
+
+  const salito = await livello(page)
+  expect(salito).toBeGreaterThan(1)
+  expect(salito).toBeLessThan(1.02)
+
+  const dopo = await bordiFotografia(page)
+  const larghezzaPrima = prima.destro - prima.sinistro
+  // Un ingrandimento dello 0,4% deve valere lo 0,4%, non il 17%.
+  expect(dopo.destro - dopo.sinistro).toBeCloseTo(larghezzaPrima * salito, 0)
+  expect((dopo.destro + dopo.sinistro) / 2).toBeCloseTo((prima.destro + prima.sinistro) / 2, 0)
+})
+
+/**
+ * Il punto fisso della pizzicata attraverso il confine fra i due stati.
+ *
+ * Il conto compone i soli livelli e assume che la scatola dipinta sotto la
+ * trasformazione non cambi: finche quella scatola cresceva passando a tutto
+ * schermo, l assunzione saltava proprio nel gesto piu comune, la prima
+ * pizzicata. **Misurato il 2026-08-17** a 1440x900 prima del rimedio: pizzicando
+ * da riposo su un punto al 25% della fotografia, quel punto finiva 92,5px piu
+ * a sinistra.
+ *
+ * Si pizzica forte, in un colpo solo, perche il punto fisso e onorabile solo
+ * dove c e spostamento da spendere: finche la fotografia sta dentro lo schermo
+ * il limite la tiene centrata — a ragione, altrimenti entrerebbe lo sfondo — e
+ * nessun conto puo tenere fermo il dettaglio sotto il dito. Per lo stesso
+ * motivo la distanza dal centro va calcolata e non fissata: su Desktop Safari
+ * il rapporto di pixel e 2, il tetto scende al minimo garantito e da un estremo
+ * all altro restano un centinaio di pixel invece di milleseicento.
+ */
+test('pizzicando da riposo il dettaglio sotto il dito non scappa di lato', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!!isMobile, 'la rotella non esiste sul mobile, e Playwright non la emula')
+
+  await apriPrima(page)
+  await senzaTransizione(page)
+  const schermo = page.viewportSize()!
+
+  // Dove arriva il tetto, per sapere quanto spostamento ci sara da spendere.
+  for (let i = 0; i < 14; i += 1) await page.keyboard.press('+')
+  const tetto = await livello(page)
+  await page.keyboard.press('0')
+
+  const prima = await bordiFotografia(page)
+  const larghezza = prima.destro - prima.sinistro
+  const centro = (prima.sinistro + prima.destro) / 2
+  const spostamentoMassimo = (larghezza * tetto - schermo.width) / 2
+  // Il 90% del punto piu lontano ancora raggiungibile: al limite esatto un
+  // decimale di arrotondamento basterebbe a far tagliare lo spostamento, e il
+  // test misurerebbe il limite invece del punto fisso.
+  const distanza = Math.min(larghezza * 0.25, spostamentoMassimo / (tetto - 1)) * 0.9
+  expect(distanza).toBeGreaterThan(20)
+
+  // Intero: il puntatore arriva alla pagina con coordinate arrotondate, e
+  // chiedendo 779,32 il gesto lavorerebbe su 779 mentre il test si aspetta
+  // 779,32. Sarebbero 1,25px di scarto che non c entrano col punto fisso.
+  const x = Math.round(centro + distanza)
+  const frazione = (x - prima.sinistro) / larghezza
+  await page.mouse.move(x, Math.round((prima.alto + prima.basso) / 2))
+  await page.keyboard.down('Control')
+  // Un colpo solo che porta esattamente al tetto: il fattore della rotella e
+  // esponenziale con sensibilita 250.
+  await page.mouse.wheel(0, -250 * Math.log(tetto))
+  await page.keyboard.up('Control')
+
+  const dopo = await bordiFotografia(page)
+  expect(dopo.destro - dopo.sinistro).toBeGreaterThan(larghezza * 1.5)
+
+  const finito = dopo.sinistro + (dopo.destro - dopo.sinistro) * frazione
+  expect(finito).toBeCloseTo(x, 0)
 })
 
 test('nessuna violazione axe con la fotografia ingrandita', async ({ page }) => {

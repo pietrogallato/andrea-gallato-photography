@@ -235,8 +235,8 @@ describe('Lightbox, ingrandimento', () => {
     index = 0,
     onClose = vi.fn(),
     onNavigate = vi.fn(),
-    misure: { superficie: [number, number]; fotografia: [number, number] } = {
-      superficie: [800, 600],
+    misure: { cornice: [number, number]; fotografia: [number, number] } = {
+      cornice: [800, 600],
       fotografia: [800, 600],
     },
   ) {
@@ -251,14 +251,15 @@ describe('Lightbox, ingrandimento', () => {
       />,
     )
     // jsdom non fa layout: senza riquadri finti ogni conto sarebbe degenere e
-    // il livello non salirebbe mai sopra 1. Sono due e non uno perche da
-    // ingranditi si separano: la superficie prende lo schermo e ritaglia, la
-    // fotografia dentro resta grande quanto il suo rapporto le consente.
+    // il livello non salirebbe mai sopra 1. Sono due e non uno perche sono due
+    // cose diverse: a ritagliare e il dialog, che e lo schermo, e la fotografia
+    // dentro e grande quanto il suo rapporto le consente.
+    const dialog = document.querySelector('dialog') as HTMLElement
     const superficie = document.querySelector('dialog figure > div') as HTMLElement
     const fotografia = document.querySelector('dialog figure > div > div') as HTMLElement
-    superficie.getBoundingClientRect = () => rettangolo(...misure.superficie)
+    dialog.getBoundingClientRect = () => rettangolo(...misure.cornice)
     fotografia.getBoundingClientRect = () => rettangolo(...misure.fotografia)
-    return { onClose, onNavigate, superficie, fotografia }
+    return { onClose, onNavigate, dialog, superficie, fotografia }
   }
 
   it('espone il comando per ingrandire, unico modo da tastiera', () => {
@@ -332,9 +333,9 @@ describe('Lightbox, ingrandimento', () => {
   })
 
   /**
-   * Da ingranditi la superficie diventa lo schermo, ma la fotografia dentro no:
-   * una quadrata su uno schermo largo continua ad avere il nero ai lati. Il
-   * limite dello spostamento e quanto la fotografia ingrandita sborda dalla
+   * Da ingranditi a ritagliare e lo schermo, ma la fotografia dentro resta la
+   * sua: una quadrata su uno schermo largo continua ad avere il nero ai lati.
+   * Il limite dello spostamento e quanto la fotografia ingrandita sborda dalla
    * cornice — se non sborda, spostarla porterebbe in scena lo sfondo, che e il
    * modo piu rapido di far sembrare rotto un visualizzatore.
    *
@@ -342,13 +343,15 @@ describe('Lightbox, ingrandimento', () => {
    * e larga 1440 esatti, quindi in orizzontale non si sposta di un pixel,
    * mentre in verticale sborda di 540 e se ne concede la meta.
    *
-   * Misurando la sola fotografia — il conto di prima, `lato * (livello - 1) /
+   * Misurando la sola fotografia — il conto ingenuo, `lato * (livello - 1) /
    * 2` — verrebbero 270px anche in orizzontale: 270px di nero trascinabili in
-   * scena, il 19% dello schermo.
+   * scena, il 19% dello schermo. E misurando la superficie invece del dialog si
+   * misurerebbe di nuovo la fotografia, perche la superficie e grande quanto
+   * lei: e il motivo per cui il riquadro finto sta sul dialog.
    */
   it('lo spostamento si ferma dove la fotografia copre la cornice', async () => {
     const { superficie } = montaConRiquadro(0, vi.fn(), vi.fn(), {
-      superficie: [1440, 900],
+      cornice: [1440, 900],
       fotografia: [900, 900],
     })
     await userEvent.click(screen.getByRole('button', { name: dict.lightboxZoomIn }))

@@ -23,7 +23,7 @@ function monta() {
   document.body.appendChild(el)
   const ref = { current: el }
   const { result } = renderHook(() => {
-    const zoom = useZoom({ id: 'a', url: GRANDE, fotografiaRef: ref, superficieRef: ref, sizesDiRiposo: '800px' })
+    const zoom = useZoom({ id: 'a', url: GRANDE, fotografiaRef: ref, corniceRef: ref, sizesDiRiposo: '800px' })
     const gesti = useGestiZoom({ superficieRef: ref, zoom })
     return { zoom, gesti }
   })

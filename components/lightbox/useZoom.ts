@@ -41,25 +41,25 @@ export type Vista = { livello: number; pan: Punto }
 /**
  * Le due misure che servono, e servono entrambe.
  *
- * A riposo coincidono. Da ingranditi no: la cornice prende tutto lo schermo e
- * la fotografia dentro resta grande quanto il suo rapporto le concede. Il tetto
- * e la larghezza da chiedere al CDN parlano dei pixel dipinti, cioe della
- * fotografia; i limiti dello spostamento parlano di quanto la fotografia sborda
- * dalla cornice, quindi di tutte e due.
+ * `fotografia` e la finestra in cui la fotografia viene dipinta, e non cambia
+ * ingrandendo: il tetto e la larghezza da chiedere al CDN parlano di quei
+ * pixel. `cornice` e cio che ritaglia, cioe il dialog, che e lo schermo: i
+ * limiti dello spostamento parlano di quanto la fotografia ingrandita sborda da
+ * li, quindi di tutte e due.
  */
-type Misure = { fotografia: Riquadro; superficie: Riquadro }
+type Misure = { fotografia: Riquadro; cornice: Riquadro }
 
 export function useZoom({
   id,
   url,
   fotografiaRef,
-  superficieRef,
+  corniceRef,
   sizesDiRiposo,
 }: {
   id: string
   url: string
   fotografiaRef: { current: HTMLElement | null }
-  superficieRef: { current: HTMLElement | null }
+  corniceRef: { current: HTMLElement | null }
   sizesDiRiposo: string
 }) {
   const [vista, setVista] = useState<Vista>({ livello: 1, pan: { x: 0, y: 0 } })
@@ -78,10 +78,10 @@ export function useZoom({
       return { larghezza: r.width, altezza: r.height }
     }
     const fotografia = uno(fotografiaRef.current)
-    const superficie = uno(superficieRef.current)
-    if (!fotografia || !superficie) return null
-    return { fotografia, superficie }
-  }, [fotografiaRef, superficieRef])
+    const cornice = uno(corniceRef.current)
+    if (!fotografia || !cornice) return null
+    return { fotografia, cornice }
+  }, [fotografiaRef, corniceRef])
 
   // Cambiando fotografia si torna a schermo intero. Senza, si arriverebbe
   // sulla successiva gia ingranditi in un punto che non ha senso per lei.
@@ -126,14 +126,14 @@ export function useZoom({
     // allargando soltanto la finestra in orizzontale la cornice cresce mentre
     // la fotografia — vincolata dall'altezza — resta identica. Osservando la
     // sola fotografia quel margine resterebbe quello di prima.
-    const elementi = [fotografiaRef.current, superficieRef.current].filter(
+    const elementi = [fotografiaRef.current, corniceRef.current].filter(
       (el): el is HTMLElement => el !== null,
     )
     if (elementi.length === 0) return
     const osservatore = new ResizeObserver(ricalcola)
     elementi.forEach((el) => osservatore.observe(el))
     return () => osservatore.disconnect()
-  }, [url, misura, fotografiaRef, superficieRef])
+  }, [url, misura, fotografiaRef, corniceRef])
 
   /**
    * Il calcolo di una nuova vista, fuori da React perche non dipenda da nulla

@@ -42,13 +42,13 @@ export function Lightbox({
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const superficieRef = useRef<HTMLDivElement>(null)
-  // Due riferimenti, perche da ingranditi i due elementi si separano: la
-  // superficie prende tutto lo schermo e ritaglia — ed e li che vanno raccolti
-  // i gesti, altrimenti il dito sul nero attorno non sposterebbe nulla —
-  // mentre la fotografia dentro resta grande quanto il suo rapporto le
-  // concede. I conti dell'ingrandimento li vogliono tutti e due: il tetto
-  // parla dei pixel dipinti, i limiti dello spostamento di quanto quei pixel
-  // sbordano dalla cornice.
+  // Tre elementi con tre mestieri diversi. La superficie raccoglie i gesti — e
+  // da ingranditi li raccoglie su tutto lo schermo, con lo pseudo-elemento che
+  // il CSS le stende sotto, altrimenti il dito sul nero attorno non sposterebbe
+  // nulla. La fotografia e la finestra in cui viene dipinta, ed e quella che il
+  // tetto misura. A ritagliare, da ingranditi, e il dialog: la fotografia esce
+  // dalla sua finestra e si ferma sui bordi dello schermo, quindi e li che si
+  // misura di quanto sborda.
   const fotografiaRef = useRef<HTMLDivElement>(null)
   const photo = photos[index]
 
@@ -58,7 +58,7 @@ export function Lightbox({
   useScrollLock()
 
   const sizesDiRiposo = sizesForLightbox(photo.ar)
-  const zoom = useZoom({ id: photo.id, url: photo.url, fotografiaRef, superficieRef, sizesDiRiposo })
+  const zoom = useZoom({ id: photo.id, url: photo.url, fotografiaRef, corniceRef: ref, sizesDiRiposo })
   const { inGesto } = useGestiZoom({ superficieRef, zoom })
 
   // Ogni cambio di fotografia riapre l'attesa. L'indicatore non compare
@@ -124,11 +124,10 @@ export function Lightbox({
       ref={ref}
       className={styles.dialog}
       aria-label={label}
-      // Ingrandendo, la cornice smette di essere un riquadro col rapporto
-      // della fotografia e diventa lo schermo intero. E un cambio di forma,
-      // quindi vive nel CSS: qui si dice soltanto in che stato siamo. Sul
-      // dialog e non sulla figure perche anche i comandi sovrapposti, che
-      // stanno fuori dalla figure, si regolano su questo.
+      // Ingrandendo, la fotografia esce dalla finestra che la ritagliava e a
+      // ritagliarla passa lo schermo. E un cambio di forma, quindi vive nel
+      // CSS: qui si dice soltanto in che stato siamo. Sul dialog e non sulla
+      // figure perche e il dialog stesso a diventare il ritaglio.
       data-ingrandita={zoom.ingrandito ? 'true' : 'false'}
       // onCancel, non onClose. `cancel` scatta solo su una richiesta di
       // chiusura dell utente (Esc); `close` scatta per qualunque chiusura,

@@ -32,15 +32,16 @@ function riquadroMutevole(larghezza: number, altezza: number) {
 }
 
 /**
- * I due riferimenti che useZoom pretende, nel caso in cui coincidono.
+ * I due riferimenti che useZoom pretende, nel caso semplice in cui coincidono.
  *
- * E lo stato a riposo: la cornice che ritaglia ha esattamente la forma della
- * fotografia. Da ingranditi le due si separano, e quel caso ha i test suoi piu
- * sotto — sono quelli dove il conto vecchio e quello nuovo danno risposte
- * diverse.
+ * Non e il caso reale — a ritagliare e il dialog, che e lo schermo, e la
+ * fotografia dentro e piu piccola — ma e quello dove il limite dello
+ * spostamento vale `lato * (livello - 1) / 2`, cioe il conto piu facile da
+ * leggere. I casi in cui i due riquadri si separano hanno i test loro piu
+ * sotto, e sono quelli dove il conto ingenuo sbaglia.
  */
 function riquadriCoincidenti(ref = riquadroFinto()) {
-  return { fotografiaRef: ref, superficieRef: ref }
+  return { fotografiaRef: ref, corniceRef: ref }
 }
 
 /**
@@ -319,13 +320,13 @@ describe('useZoom', () => {
    */
   it('da ingranditi ferma lo spostamento dove la fotografia copre la cornice', () => {
     const fotografia = riquadroMutevole(900, 900)
-    const superficie = riquadroMutevole(1440, 900)
+    const cornice = riquadroMutevole(1440, 900)
     const { result } = renderHook(() =>
       useZoom({
         id: 'a',
         url: GRANDE,
         fotografiaRef: fotografia.ref,
-        superficieRef: superficie.ref,
+        corniceRef: cornice.ref,
         sizesDiRiposo: '900px',
       }),
     )
@@ -344,13 +345,13 @@ describe('useZoom', () => {
    */
   it('non concede spostamento finche la fotografia non riempie la cornice', () => {
     const fotografia = riquadroMutevole(412, 412)
-    const superficie = riquadroMutevole(412, 915)
+    const cornice = riquadroMutevole(412, 915)
     const { result } = renderHook(() =>
       useZoom({
         id: 'a',
         url: GRANDE,
         fotografiaRef: fotografia.ref,
-        superficieRef: superficie.ref,
+        corniceRef: cornice.ref,
         sizesDiRiposo: '412px',
       }),
     )
@@ -371,13 +372,13 @@ describe('useZoom', () => {
   it('rientra nei bordi quando a cambiare e solo la cornice', () => {
     const osservatore = osservatorePilotabile()
     const fotografia = riquadroMutevole(900, 900)
-    const superficie = riquadroMutevole(1200, 900)
+    const cornice = riquadroMutevole(1200, 900)
     const { result } = renderHook(() =>
       useZoom({
         id: 'a',
         url: GRANDE,
         fotografiaRef: fotografia.ref,
-        superficieRef: superficie.ref,
+        corniceRef: cornice.ref,
         sizesDiRiposo: '900px',
       }),
     )
@@ -387,7 +388,7 @@ describe('useZoom', () => {
     expect(result.current.pan.x).toBe(300)
 
     act(() => {
-      superficie.cambia(1600, 900)
+      cornice.cambia(1600, 900)
       osservatore.scatta()
     })
     // (900 x 2 - 1600) / 2
