@@ -356,10 +356,21 @@ describe('useGestiZoom, lo swipe che cambia fotografia', () => {
 
     act(() => {
       el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+    })
+    // Il dito scende di 200px e intanto deriva di 20 di lato, come fa una mano
+    // che scorre. Lo scarto va guardato QUI, col dito ancora giu: il rilascio
+    // lo azzera sempre — e il ritorno elastico — quindi un controllo fatto
+    // dopo sarebbe vero anche con la fotografia che se ne va, e questo test
+    // non direbbe piu niente. Va tenuto in un act() suo perche lo stato di
+    // React si veda a meta gesto invece che a gesto finito.
+    act(() => {
       el.dispatchEvent(puntatore('pointermove', { id: 1, x: 380, y: 100, tempo: 1100 }))
+    })
+    expect(result.current.gesti.scarto).toBe(0)
+
+    act(() => {
       el.dispatchEvent(puntatore('pointerup', { id: 1, x: 380, y: 100, tempo: 1150 }))
     })
-
     expect(vai).not.toHaveBeenCalled()
     expect(result.current.gesti.scarto).toBe(0)
   })
