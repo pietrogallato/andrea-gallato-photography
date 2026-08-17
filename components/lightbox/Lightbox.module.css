@@ -38,18 +38,27 @@
   gap: var(--space-4);
   max-width: min(100vw, calc(100dvh * 2));
   max-height: 100dvh;
-  padding: var(--space-6) var(--space-5) var(--space-5);
+  /* Il margine attorno alla fotografia e il prezzo che si paga in superficie:
+     ogni pixel di padding e un pixel che lo scatto non ha. Resta quel poco che
+     serve a staccarlo dai bordi dello schermo e a non far toccare la
+     didascalia al fondo. */
+  padding: var(--space-4) var(--space-3);
   /* pan-y preserva lo scroll verticale, pinch-zoom preserva l ingrandimento,
      che e il meccanismo con cui un utente ipovedente ingrandisce la foto. */
   touch-action: pan-y pinch-zoom;
 }
 
-/* La superficie e cio che si misura, cio che riceve i gesti e cio che porta le
-   variabili dell ingrandimento. Il ritaglio invece resta al contenitore di
-   SanityImage, che ha gia overflow: hidden e il rapporto giusto. */
+/* La superficie e cio che riceve i gesti e cio che porta le variabili
+   dell ingrandimento. A riposo il ritaglio non e suo: resta al contenitore di
+   SanityImage, che ha gia overflow: hidden e il rapporto giusto. Da ingranditi
+   invece il ritaglio passa di qui — vedi le regole di `data-ingrandita`.
+
+   Cio che si misura, invece, non e piu la superficie ma la fotografia dentro:
+   da ingranditi le due si separano, e il tetto e i limiti dello spostamento
+   parlano dei pixel dipinti. */
 .superficie {
-  width: min(100%, calc(78dvh * var(--ar)));
-  max-height: 78dvh;
+  width: min(100%, calc(86dvh * var(--ar)));
+  max-height: 86dvh;
   /* `none` solo qui: la pizzicata su questa superficie e nostra. Su didascalia,
      pulsanti e margini resta quella del browser, che ingrandisce la pagina ed e
      il modo con cui chi ci vede poco legge una didascalia piccola (WCAG 1.4.4).
@@ -93,6 +102,61 @@
   transition: none;
 }
 
+/* Ingranditi: la cornice diventa lo schermo.
+   ------------------------------------------------------------------
+   A riposo il riquadro che ritaglia ha la forma della fotografia, e va bene:
+   attorno c e il nero e la didascalia. Ingrandendo quel riquadro diventava una
+   finestra dentro cui il contenuto cresceva senza che la finestra crescesse
+   mai — si moltiplicavano i pixel dentro gli stessi 702x702 su uno schermo da
+   1440x900. Qui il ritaglio si sposta sulla superficie, che prende tutto lo
+   schermo: appena l ingrandimento supera il punto in cui la fotografia copre
+   il viewport, tutto il viewport e fotografia, e lo spostamento la percorre
+   per intero.
+
+   Le tre regole sono una cosa sola: la figure smette di riservare margini, la
+   superficie diventa il viewport e ritaglia, e il contenitore della fotografia
+   smette di ritagliare — se continuasse, l ingrandimento resterebbe imprigionato
+   nei suoi bordi e non si vedrebbe alcuna differenza. */
+.dialog[data-ingrandita='true'] .figure {
+  padding: 0;
+  max-width: none;
+  /* Altezza esplicita, non `max-height`: la figure e un elemento di griglia
+     non stirato, quindi si dimensionerebbe sul contenuto e il `height: 100%`
+     della superficie qui sotto non avrebbe nulla su cui appoggiarsi. */
+  height: 100dvh;
+  max-height: none;
+}
+
+.dialog[data-ingrandita='true'] .superficie {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+/* Selettore composto e non `.image` da solo: `overflow` qui contraddice quello
+   del wrapper di SanityImage, che ha la stessa specificita di una classe. Fra
+   due regole pari vincerebbe l ordine dei fogli nel bundle, che non e nostro
+   da decidere. */
+.dialog[data-ingrandita='true'] .image {
+  overflow: visible;
+  /* La fotografia piu grande che sta nel viewport conservando il rapporto: la
+     stessa espressione della superficie a riposo, senza piu il margine.
+     `height` resta all `aspect-ratio` che il wrapper porta gia, cosi quando a
+     stringere e la larghezza il rapporto non si spezza — con un altezza fissa
+     al 100% una verticale su uno schermo largo si ritroverebbe ritagliata dal
+     `cover` gia prima di aver ingrandito. */
+  width: min(100%, calc(100dvh * var(--ar)));
+}
+
+/* Il fondo semitrasparente non e decorazione: con il margine laterale sceso a
+   16px le frecce, che stanno anche loro a 16px dal bordo, cadono per intero
+   sopra la fotografia invece che sul nero attorno. Su uno scatto chiaro un
+   segno grigio su bianco non si legge. E lo stesso fondo dei comandi
+   dell ingrandimento, che il problema ce l avevano gia: tutto cio che si
+   sovrappone alla fotografia si comporta allo stesso modo. */
 .close,
 .prev,
 .next {
@@ -102,6 +166,7 @@
   min-width: var(--target-min);
   min-height: var(--target-min);
   color: var(--fg-muted);
+  background: color-mix(in oklab, var(--bg) 72%, transparent);
   border-radius: var(--radius);
   transition: color var(--duration-fast) var(--ease),
     opacity var(--duration-fast) var(--ease);
