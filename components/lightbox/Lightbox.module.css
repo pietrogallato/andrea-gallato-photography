@@ -156,17 +156,35 @@
    sopra la fotografia invece che sul nero attorno. Su uno scatto chiaro un
    segno grigio su bianco non si legge. E lo stesso fondo dei comandi
    dell ingrandimento, che il problema ce l avevano gia: tutto cio che si
-   sovrappone alla fotografia si comporta allo stesso modo. */
+   sovrappone alla fotografia si comporta allo stesso modo.
+
+   Il 78% e risolto, non scelto a occhio: WCAG 1.4.11 chiede 3:1 a un icona, e
+   il caso peggiore e lo scatto bianco. Il tratto e --fg-muted #8f8d8a, che
+   perche il rapporto arrivi a 3 pretende un fondo sotto rgb(67,67,67); il
+   composito sul bianco vale 255 - alpha * (255 - canale di --bg), e il canale
+   piu chiaro di #08080a e 10, quindi alpha >= 0,769. **Misurato a pixel il
+   2026-08-17** su build di produzione, fotografia servita bianca, 412x915: col
+   72% di prima il composito era rgb(77,77,78), cioe 2,55:1 — sotto soglia, e
+   paradossalmente peggio del 3,31:1 che l icona nuda aveva sul bianco puro.
+
+   z-index: 2 come i comandi dell ingrandimento, e per la stessa ragione. Da
+   ingranditi la fotografia copre lo schermo, e sia l `<img>` — che porta una
+   trasformazione — sia il suo contenitore dipingono nella fase degli elementi
+   posizionati: fra pari decide l ordine dell albero, e nel JSX la chiusura sta
+   prima della figure. Senza questa riga il pulsante finiva sotto la fotografia:
+   invisibile, inerte, e col contorno del fuoco oscurato, che WCAG 2.4.11 non
+   consente. Le frecce si salvavano solo perche stanno dopo nel JSX. */
 .close,
 .prev,
 .next {
   position: absolute;
+  z-index: 2;
   display: grid;
   place-items: center;
   min-width: var(--target-min);
   min-height: var(--target-min);
   color: var(--fg-muted);
-  background: color-mix(in oklab, var(--bg) 72%, transparent);
+  background: color-mix(in oklab, var(--bg) 78%, transparent);
   border-radius: var(--radius);
   transition: color var(--duration-fast) var(--ease),
     opacity var(--duration-fast) var(--ease);
@@ -278,7 +296,8 @@
   min-width: var(--target-min);
   min-height: var(--target-min);
   color: var(--fg-muted);
-  background: color-mix(in oklab, var(--bg) 72%, transparent);
+  /* Stesso fondo delle frecce, stessa ragione: vedi il conto li sopra. */
+  background: color-mix(in oklab, var(--bg) 78%, transparent);
   border-radius: var(--radius);
   transition: color var(--duration-fast) var(--ease);
 }
@@ -311,9 +330,11 @@
    vedrebbe piu dov e arrivato.
 
    Le due percentuali qui sotto sono i colori di prima gia composti con quel
-   20%: 72% * 20% = 14,4%. **Confronto a pixel del 2026-08-17**, stesso
-   pulsante spento nei due modi sopra lo stesso sfondo: sul fondo del dialog lo
-   scarto massimo e 2/255, cioe niente. L equivalenza non e pero esatta ovunque,
+   20%: 78% * 20% = 15,6%. **Confronto a pixel del 2026-08-17**, fatto quando il
+   fondo era al 72% e quindi su 14,4% — alzarlo al 78% cambia allo stesso modo i
+   due termini, quindi il confronto regge: stesso pulsante spento nei due modi
+   sopra lo stesso sfondo, sul fondo del dialog lo scarto massimo e 2/255, cioe
+   niente. L equivalenza non e pero esatta ovunque,
    e vale sapere perche: con `opacity` l icona copriva il fondo del pulsante,
    qui lo lascia trasparire. Se il comando finisce sopra una zona chiara della
    fotografia lo scarto arriva a 23/255, ma solo sui 179 sottopixel del segno
@@ -322,7 +343,7 @@
 .zoomButton:disabled,
 .zoomButton[aria-disabled='true'] {
   color: color-mix(in oklab, var(--fg-muted) 20%, transparent);
-  background: color-mix(in oklab, var(--bg) 14.4%, transparent);
+  background: color-mix(in oklab, var(--bg) 15.6%, transparent);
   cursor: default;
 }
 

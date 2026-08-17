@@ -329,6 +329,98 @@ test('il trascinamento col mouse arriva fino in fondo, non muore al primo scatto
   expect(partenza.sinistro - arrivo.sinistro).toBeCloseTo(scatto * 6, 0)
 })
 
+/**
+ * Da ingranditi la fotografia arriva a coprire lo schermo, e passa quindi
+ * sopra il punto dove sta il pulsante che chiude. Nel JSX quel pulsante viene
+ * prima della figure, e sia l `<img>` (che porta una trasformazione) sia il suo
+ * contenitore dipingono nella fase degli elementi posizionati: fra pari,
+ * decide l ordine dell albero, e la fotografia vince. **Misurato il
+ * 2026-08-17** a 1440x900 prima del rimedio, con un solo colpo di `+`:
+ * `elementFromPoint` al centro del pulsante restituiva l `<img>`, il clic non
+ * chiudeva, e da ingranditi restavano solo Esc due volte o il ritorno a
+ * schermo intero. Peggio col fuoco: il contorno spariva sotto la fotografia,
+ * che WCAG 2.4.11 non consente.
+ */
+test('da ingranditi il pulsante che chiude resta sopra la fotografia', async ({ page }) => {
+  await apriPrima(page)
+  // Senza togliere la transizione la fotografia e ancora a meta strada quando
+  // si misura, e il difetto — che si presenta a fotografia arrivata — non si
+  // vede: il test passerebbe con il difetto in vigore.
+  await senzaTransizione(page)
+  await page.getByRole('button', { name: 'Ingrandisci la fotografia' }).click()
+
+  const chiudi = page.getByRole('button', { name: 'Chiudi' })
+  const riquadro = (await chiudi.boundingBox())!
+  const centro = { x: riquadro.x + riquadro.width / 2, y: riquadro.y + riquadro.height / 2 }
+
+  // Chi c e sotto quel punto lo dice il browser, non il foglio di stile.
+  const sotto = await page.evaluate(
+    ({ x, y }) => {
+      const el = document.elementFromPoint(x, y)
+      return el?.closest('button') ? 'pulsante' : (el?.tagName ?? 'niente')
+    },
+    centro,
+  )
+  expect(sotto).toBe('pulsante')
+
+  // E un clic vero, non `.click()` di Playwright, che troverebbe comunque
+  // l elemento: qui si chiede al mouse di premere in quel punto dello schermo.
+  await page.mouse.click(centro.x, centro.y)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
+/**
+ * I comandi sovrapposti alla fotografia e il caso peggiore, che e il bianco.
+ *
+ * Il fondo semitrasparente sotto le icone esiste proprio per questo: con il
+ * margine laterale a 16px le frecce cadono per intero sopra la fotografia, e un
+ * segno grigio su uno scatto chiaro non si legge. WCAG 1.4.11 chiede 3:1 a un
+ * elemento non testuale che porta informazione. **Misurato a pixel il
+ * 2026-08-17** su build di produzione, fotografia servita bianca, 412x915: col
+ * fondo al 72% il composito era rgb(77,77,78) contro un tratto rgb(143,141,138),
+ * cioe 2,55:1 — sotto soglia, e paradossalmente peggio del 3,31:1 che l icona
+ * nuda aveva sul bianco puro.
+ *
+ * Il conto si fa qui col compositore del browser — si dipinge il fondo del
+ * comando sopra il bianco su una tela — invece che leggendo i pixel di uno
+ * scatto: cosi il test dice la stessa cosa su tutti i viewport, anche dove il
+ * comando cade sul nero e il caso peggiore non si presenta.
+ */
+test('i comandi sovrapposti restano leggibili anche sopra il bianco', async ({ page }) => {
+  await apriPrima(page)
+
+  for (const nome of ['Fotografia successiva', 'Ingrandisci la fotografia']) {
+    const misura = await page.getByRole('button', { name: nome }).evaluate((el) => {
+      const stile = getComputedStyle(el)
+      const tela = document.createElement('canvas')
+      tela.width = 1
+      tela.height = 1
+      const ctx = tela.getContext('2d')!
+      const dipingi = (colore: string, sopra?: string) => {
+        ctx.clearRect(0, 0, 1, 1)
+        if (sopra) {
+          ctx.fillStyle = sopra
+          ctx.fillRect(0, 0, 1, 1)
+        }
+        ctx.fillStyle = colore
+        ctx.fillRect(0, 0, 1, 1)
+        return [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3)
+      }
+      return { fondo: dipingi(stile.backgroundColor, '#ffffff'), tratto: dipingi(stile.color) }
+    })
+
+    const luminanza = (c: number[]) => {
+      const f = (v: number) => {
+        const s = v / 255
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2])
+    }
+    const [chiaro, scuro] = [luminanza(misura.fondo), luminanza(misura.tratto)].sort((a, b) => b - a)
+    expect((chiaro + 0.05) / (scuro + 0.05)).toBeGreaterThanOrEqual(3)
+  }
+})
+
 test('nessuna violazione axe con la fotografia ingrandita', async ({ page }) => {
   await apriPrima(page)
   await page.getByRole('button', { name: 'Ingrandisci la fotografia' }).click()
