@@ -97,12 +97,15 @@ riproducibile, e finirà per non essere corretto.
 
 ---
 
-## 3. La pizzicata, su un telefono vero
+## 3. I gesti, su un telefono vero
 
 **Perché non è automatizzabile.** `Touchscreen` di Playwright dichiara di emulare soltanto
 i gesti di tap; il progetto `iphone` gira su WebKit, quindi non c'è un CDP a cui ripiegare;
 e i `TouchEvent` costruiti a mano non generano Pointer Events. Rotella, doppio clic e
-tastiera sono sotto test in `e2e/zoom.spec.ts`. La pizzicata no, e non lo sarà.
+tastiera sono sotto test in `e2e/zoom.spec.ts`; lo swipe è esercitato con `page.mouse` in
+`e2e/lightbox.spec.ts`, che è un puntatore vero ma è **uno solo e non è un dito**. La
+pizzicata, e tutto ciò che dipende dal secondo dito o dalla taglia della mano, no — e non lo
+sarà.
 
 Su un telefono, aperta una fotografia in galleria:
 
@@ -122,6 +125,49 @@ Su un telefono, aperta una fotografia in galleria:
 5. **arrivare al tetto** su una fotografia grande e su una da 1080 px, e guardare se
    l'immagine resta accettabile o si vede sgranata. Se si vede, il minimo garantito di 2×
    in `lib/lightbox/zoom.ts` va rivisto — annotando la misura.
+
+### Lo sfogliare con un dito
+
+Le regole stanno in `lib/lightbox/swipe.ts` e sono verificate nell'aritmetica; il
+collegamento a un puntatore è verificato in jsdom e con `page.mouse`. Quel che resta
+indimostrato è proprio ciò che serve un dito per dire.
+
+6. **trascinare in orizzontale** a riposo e verificare che la fotografia segua il dito
+   mentre si trascina, senza ritardo percepibile e senza staccarsi da esso;
+7. **lasciare a metà strada** e verificare che torni al suo posto, e **lasciare oltre metà
+   schermo** e verificare che cambi;
+8. **dare un colpetto corto e veloce**, senza attraversare lo schermo, e verificare che
+   cambi lo stesso: è l'unico modo in cui si sfoglia davvero in piedi con una mano sola;
+9. **trascinare in verticale** sulla fotografia e verificare che non scivoli di lato;
+10. **appoggiare un secondo dito** mentre si sta trascinando e verificare che lo sfogliare
+    si annulli e cominci una pizzicata, senza che la fotografia cambi al rilascio. È
+    l'unico punto del gesto che nessuna delle due suite tocca: in jsdom il secondo dito è
+    un evento sintetico, e `page.mouse` di dita ne ha una;
+11. **ingrandire e poi trascinare in orizzontale** e verificare che si sposti la vista
+    dentro la fotografia invece di cambiare fotografia;
+12. **arrivare all'ultima fotografia** e trascinare ancora in avanti: deve cedere di poco e
+    fermarsi, e tornare al suo posto al rilascio.
+
+**Le quattro soglie da tarare, ed è il vero motivo per cui questa prova esiste.** Sono
+tutte scelte a tavolino e nessuna è stata misurata su una mano: `FRAZIONE_SOGLIA` (un
+quinto della larghezza), `VELOCITA_SCATTO_PX_MS` (0,5 px/ms), `MINIMO_SCATTO_PX` (30 px) e
+`CEDIMENTO_AL_BORDO` (un quarto), tutte in `lib/lightbox/swipe.ts`, più `IMPEGNO_PX` (10
+px) che decide l'asse. I sintomi da cui si riconosce quale è sbagliata:
+
+- **cambia da sola** mentre si regge il telefono o si scorre → `FRAZIONE_SOGLIA` troppo
+  bassa, oppure `VELOCITA_SCATTO_PX_MS` troppo bassa se succede solo alzando il dito in
+  fretta;
+- **non cambia mai** senza attraversare tutto lo schermo → `FRAZIONE_SOGLIA` troppo alta,
+  oppure `VELOCITA_SCATTO_PX_MS` troppo alta se i colpetti non vengono raccolti;
+- **la fotografia parte di lato mentre si scorre in verticale** → `IMPEGNO_PX` troppo
+  basso, cioè l'asse si fissa prima che il dito abbia detto dove va;
+- **il bordo sembra rotto invece che finito** → `CEDIMENTO_AL_BORDO`, in un verso o
+  nell'altro: se non si muove nulla sembra un comando spento, se si muove troppo sembra un
+  cambio riuscito a metà.
+
+Ogni valore corretto va riscritto nel commento accanto alla costante insieme alla misura e
+alla data, sostituendo la dicitura «scelta, non misurata». Finché quella dicitura è lì, la
+costante è un'ipotesi.
 
 ### Cosa fare dei risultati
 

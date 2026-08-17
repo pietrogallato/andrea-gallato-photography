@@ -59,7 +59,15 @@ export function Lightbox({
 
   const sizesDiRiposo = sizesForLightbox(photo.ar)
   const zoom = useZoom({ id: photo.id, url: photo.url, fotografiaRef, corniceRef: ref, sizesDiRiposo })
-  const { inGesto } = useGestiZoom({ superficieRef, zoom })
+  // La navigazione va dentro i gesti perche a riposo il trascinamento
+  // orizzontale sfoglia, esattamente come le frecce qui sotto. I pulsanti e i
+  // tasti restano dove sono: il gesto e un'aggiunta, e chi non puo trascinare
+  // deve poter fare la stessa cosa senza (WCAG 2.5.7).
+  const { inGesto, scarto } = useGestiZoom({
+    superficieRef,
+    zoom,
+    navigazione: { indice: index, quante: photos.length, vai: onNavigate },
+  })
 
   // Ogni cambio di fotografia riapre l'attesa. L'indicatore non compare
   // subito: sotto la soglia il caricamento e gia finito, e farlo lampeggiare
@@ -117,6 +125,12 @@ export function Lightbox({
     '--zoom': String(zoom.livello),
     '--pan-x': `${zoom.pan.x}px`,
     '--pan-y': `${zoom.pan.y}px`,
+    // Variabile sua, e non `--pan-x`: quella dice dove si e dentro una
+    // fotografia ingrandita ed e limitata ai bordi di quella fotografia, tanto
+    // che a riposo `limitaSpostamento` la schiaccia a zero. Lo scarto e
+    // l'opposto — la fotografia intera che scivola via — e passare di li
+    // spegnerebbe il seguito del dito senza un solo errore.
+    '--scarto-x': `${scarto}px`,
   } as React.CSSProperties
 
   return (

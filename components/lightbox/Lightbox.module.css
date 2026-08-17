@@ -93,8 +93,19 @@
    Una transizione CSS, non un animazione in JavaScript: la regola globale di
    prefers-reduced-motion azzera le durate CSS, e non saprebbe fermare un
    requestAnimationFrame. */
+/* Due spostamenti orizzontali sommati, e sono due cose diverse: `--pan-x` dice
+   dove si e dentro una fotografia ingrandita, `--scarto-x` di quanto la
+   fotografia intera sta scivolando via seguendo il dito che sfoglia. Non si
+   sovrappongono mai — il primo e sempre zero a riposo, il secondo solo a riposo
+   esiste — ma sommarli invece che sceglierne uno tiene la riga vera anche
+   nell'istante in cui i due stati si scambiano.
+
+   La somma sta dentro la translate e non in una seconda funzione dopo lo
+   scale(): li i pixel sarebbero moltiplicati per il livello, e lo scarto —
+   misurato sul dito, cioe sullo schermo — arriverebbe amplificato. */
 .superficie img {
-  transform: translate(var(--pan-x, 0px), var(--pan-y, 0px)) scale(var(--zoom, 1));
+  transform: translate(calc(var(--pan-x, 0px) + var(--scarto-x, 0px)), var(--pan-y, 0px))
+    scale(var(--zoom, 1));
   transition: transform var(--duration-fast) var(--ease-out);
 }
 
