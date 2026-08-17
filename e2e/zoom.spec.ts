@@ -1,5 +1,6 @@
 import { test, expect } from './fixtures'
 import AxeBuilder from '@axe-core/playwright'
+import { MOLTIPLICATORE_MINIMO } from '@/lib/lightbox/zoom'
 
 async function apriPrima(page: import('@playwright/test').Page) {
   await page.goto('/it/fotografie')
@@ -168,41 +169,65 @@ test('ingrandendo, la cornice che ritaglia diventa il viewport', async ({ page }
 })
 
 /**
- * Espandendo la cornice, la fotografia si dipinge da subito piu grande: il
- * tetto in cifre deve scendere, perche si parte da piu vicino ai pixel veri
- * del file. Se non si ricalcolasse, resterebbe quello misurato a riposo e si
- * ingrandirebbe oltre i pixel disponibili, cioe fino a vedere la sgranatura.
+ * Il tetto per quello che e: un pixel del file per ogni pixel dello schermo,
+ * non uno di piu.
+ *
+ * Il test che stava qui prima diceva di inseguire proprio questo e non lo
+ * faceva: le sue due asserzioni si semplificavano entrambe in «la fotografia
+ * dipinta da ingranditi e piu larga di quella a riposo», cioe una conseguenza
+ * diretta di una regola CSS, vera qualunque cosa facesse il calcolo del tetto.
+ *
+ * Qui il conto si fa dove il difetto vive: al massimo dell ingrandimento, in
+ * pixel del dispositivo, contro le dimensioni native che stanno nell URL dell
+ * asset. Chiedere piu pixel di quelli che il file ha e esattamente la
+ * sgranatura che il tetto esiste per impedire.
  */
-test('espandendo la cornice il tetto si ricalcola', async ({ page }) => {
+test('al tetto la fotografia non viene distesa oltre i pixel del suo file', async ({ page }) => {
   await apriPrima(page)
 
-  // Al tetto da riposo: il livello si ferma da solo, e il comando si spegne.
-  for (let i = 0; i < 10; i += 1) await page.keyboard.press('+')
+  for (let i = 0; i < 14; i += 1) await page.keyboard.press('+')
   await expect(page.getByRole('button', { name: 'Ingrandisci la fotografia' })).toHaveAttribute(
     'aria-disabled',
     'true',
   )
-  const tettoDopoLEspansione = await livello(page)
 
-  // Quanto grande e la fotografia adesso, in pixel CSS: il prodotto fra il
-  // livello e la larghezza dipinta e il punto d arrivo, e non deve dipendere
-  // da quale delle due cornici si stia misurando.
-  const dipinta = await page.evaluate(() => {
-    const foto = document.querySelector('dialog figure > div > div') as HTMLElement
-    return foto.getBoundingClientRect().width
+  // `sizes` sale solo a gradino scaricato e decodificato, dopo il riposo di
+  // 200ms che tiene la rete fuori dal gesto: senza questa attesa si leggerebbe
+  // ancora quello di partenza, che e un espressione CSS e non un numero.
+  await expect
+    .poll(() => page.getAttribute('dialog figure img', 'sizes'), { timeout: 10_000 })
+    .toMatch(/^\d+px$/)
+
+  const misure = await page.evaluate(() => {
+    const img = document.querySelector('dialog figure img') as HTMLImageElement
+    const finestra = document.querySelector('dialog figure > div > div') as HTMLElement
+    const superficie = document.querySelector('dialog figure > div') as HTMLElement
+    const livelloOra = Number(getComputedStyle(superficie).getPropertyValue('--zoom'))
+    const dimensioni = /-(\d+)x(\d+)\./.exec(img.getAttribute('src') ?? '')
+    return {
+      nativi: dimensioni ? Number(dimensioni[1]) : 0,
+      dipintaDispositivo: finestra.getBoundingClientRect().width * window.devicePixelRatio,
+      resa: finestra.getBoundingClientRect().width * livelloOra * window.devicePixelRatio,
+      resaCss: finestra.getBoundingClientRect().width * livelloOra,
+      sizes: img.getAttribute('sizes'),
+    }
   })
-  const arrivo = tettoDopoLEspansione * dipinta
 
-  await page.keyboard.press('0')
-  const aRiposo = await page.evaluate(() => {
-    const foto = document.querySelector('dialog figure > div > div') as HTMLElement
-    return foto.getBoundingClientRect().width
-  })
+  // Senza dimensioni nell URL il resto del test non direbbe nulla.
+  expect(misure.nativi).toBeGreaterThan(0)
 
-  // A riposo si parte da piu lontano, quindi lo stesso arrivo costa un tetto
-  // piu alto: e la prova che il tetto non e rimasto quello di prima.
-  expect(dipinta).toBeGreaterThan(aRiposo)
-  expect(arrivo / aRiposo).toBeGreaterThan(tettoDopoLEspansione)
+  // Il consentito e il maggiore fra i pixel veri e il minimo garantito, che
+  // esiste perche meta archivio e esportato a 1080px di lato lungo e col
+  // criterio rigoroso l ingrandimento sarebbe spento la meta delle volte. Su
+  // uno schermo a 2x il minimo e proprio il ramo che vince.
+  const consentito = Math.max(misure.nativi, misure.dipintaDispositivo * MOLTIPLICATORE_MINIMO)
+  expect(misure.resa).toBeLessThanOrEqual(consentito + 1)
+  // E il tetto ci arriva, non si ferma prima: un tetto troppo basso lascerebbe
+  // sul tavolo i pixel che il visitatore e venuto a guardare.
+  expect(misure.resa).toBeGreaterThan(consentito * 0.98)
+  // La variante chiesta alla CDN e la stessa cosa detta in pixel CSS: se
+  // `sizes` non seguisse il tetto, i pixel in piu resterebbero teorici.
+  expect(Number(misure.sizes?.replace('px', ''))).toBeCloseTo(misure.resaCss, -1)
 })
 
 /**
