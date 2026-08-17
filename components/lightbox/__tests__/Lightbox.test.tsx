@@ -228,7 +228,18 @@ describe('Lightbox, stato di caricamento', () => {
 })
 
 describe('Lightbox, ingrandimento', () => {
-  function montaConRiquadro(index = 0, onClose = vi.fn(), onNavigate = vi.fn()) {
+  const rettangolo = (width: number, height: number) =>
+    ({ width, height, left: 0, top: 0, right: width, bottom: height, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+
+  function montaConRiquadro(
+    index = 0,
+    onClose = vi.fn(),
+    onNavigate = vi.fn(),
+    misure: { superficie: [number, number]; fotografia: [number, number] } = {
+      superficie: [800, 600],
+      fotografia: [800, 600],
+    },
+  ) {
     render(
       <Lightbox
         photos={photos}
@@ -239,12 +250,15 @@ describe('Lightbox, ingrandimento', () => {
         onNavigate={onNavigate}
       />,
     )
-    // jsdom non fa layout: senza un riquadro finto ogni conto sarebbe degenere
-    // e il livello non salirebbe mai sopra 1.
+    // jsdom non fa layout: senza riquadri finti ogni conto sarebbe degenere e
+    // il livello non salirebbe mai sopra 1. Sono due e non uno perche da
+    // ingranditi si separano: la superficie prende lo schermo e ritaglia, la
+    // fotografia dentro resta grande quanto il suo rapporto le consente.
     const superficie = document.querySelector('dialog figure > div') as HTMLElement
-    superficie.getBoundingClientRect = () =>
-      ({ width: 800, height: 600, left: 0, top: 0, right: 800, bottom: 600, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
-    return { onClose, onNavigate, superficie }
+    const fotografia = document.querySelector('dialog figure > div > div') as HTMLElement
+    superficie.getBoundingClientRect = () => rettangolo(...misure.superficie)
+    fotografia.getBoundingClientRect = () => rettangolo(...misure.fotografia)
+    return { onClose, onNavigate, superficie, fotografia }
   }
 
   it('espone il comando per ingrandire, unico modo da tastiera', () => {
@@ -296,6 +310,49 @@ describe('Lightbox, ingrandimento', () => {
     montaConRiquadro(0)
     await userEvent.keyboard('=')
     expect(screen.getByRole('button', { name: dict.lightboxZoomReset })).toBeInTheDocument()
+  })
+
+  /**
+   * Ingrandendo, la cornice smette di essere un riquadro col rapporto della
+   * fotografia e diventa lo schermo: e un cambio di forma, non di contenuto,
+   * quindi vive nel CSS. Ma il CSS deve poter sapere in che stato siamo, e
+   * l unico modo e questo attributo sul dialog. Senza, la regola non ha
+   * appiglio e la cornice resta grande come a riposo.
+   */
+  it('marca sul dialog lo stato ingrandito, l appiglio del CSS', async () => {
+    montaConRiquadro(0)
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveAttribute('data-ingrandita', 'false')
+
+    await userEvent.click(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+    expect(dialog).toHaveAttribute('data-ingrandita', 'true')
+
+    await userEvent.click(screen.getByRole('button', { name: dict.lightboxZoomReset }))
+    expect(dialog).toHaveAttribute('data-ingrandita', 'false')
+  })
+
+  /**
+   * Da ingranditi la superficie diventa lo schermo, ma la fotografia dentro no:
+   * una quadrata su uno schermo largo continua ad avere il nero ai lati. I
+   * limiti dello spostamento vanno presi dalla fotografia, non dalla cornice —
+   * altrimenti si puo trascinare lo scatto fin fuori dai suoi stessi bordi e
+   * restare a guardare lo sfondo, che e il modo piu rapido di far sembrare
+   * rotto un visualizzatore.
+   *
+   * Con la cornice 1440 e il livello 1,6 il limite sarebbe 432px; con la
+   * fotografia 900, che e quella dipinta davvero, e 270px.
+   */
+  it('lo spostamento si ferma sui bordi della fotografia, non su quelli dello schermo', async () => {
+    const { superficie } = montaConRiquadro(0, vi.fn(), vi.fn(), {
+      superficie: [1440, 900],
+      fotografia: [900, 900],
+    })
+    await userEvent.click(screen.getByRole('button', { name: dict.lightboxZoomIn }))
+
+    // Otto passi da 60px chiedono 480: piu di tutti e due i limiti in gioco.
+    for (let i = 0; i < 8; i += 1) await userEvent.keyboard('{ArrowLeft}')
+
+    expect(parseFloat(superficie.style.getPropertyValue('--pan-x'))).toBeCloseTo(270)
   })
 
   it('cambiando fotografia torna a schermo intero', async () => {

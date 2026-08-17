@@ -42,6 +42,13 @@ export function Lightbox({
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const superficieRef = useRef<HTMLDivElement>(null)
+  // Due riferimenti, perche da ingranditi i due elementi si separano: la
+  // superficie prende tutto lo schermo e ritaglia — ed e li che vanno raccolti
+  // i gesti, altrimenti il dito sul nero attorno non sposterebbe nulla —
+  // mentre la fotografia dentro resta grande quanto il suo rapporto le
+  // concede. I conti dell'ingrandimento vogliono la seconda: il tetto e i
+  // limiti dello spostamento parlano dei pixel dipinti, non della finestra.
+  const fotografiaRef = useRef<HTMLDivElement>(null)
   const photo = photos[index]
 
   const [loaded, setLoaded] = useState(false)
@@ -50,7 +57,7 @@ export function Lightbox({
   useScrollLock()
 
   const sizesDiRiposo = sizesForLightbox(photo.ar)
-  const zoom = useZoom({ id: photo.id, url: photo.url, riquadroRef: superficieRef, sizesDiRiposo })
+  const zoom = useZoom({ id: photo.id, url: photo.url, riquadroRef: fotografiaRef, sizesDiRiposo })
   const { inGesto } = useGestiZoom({ superficieRef, zoom })
 
   // Ogni cambio di fotografia riapre l'attesa. L'indicatore non compare
@@ -116,6 +123,12 @@ export function Lightbox({
       ref={ref}
       className={styles.dialog}
       aria-label={label}
+      // Ingrandendo, la cornice smette di essere un riquadro col rapporto
+      // della fotografia e diventa lo schermo intero. E un cambio di forma,
+      // quindi vive nel CSS: qui si dice soltanto in che stato siamo. Sul
+      // dialog e non sulla figure perche anche i comandi sovrapposti, che
+      // stanno fuori dalla figure, si regolano su questo.
+      data-ingrandita={zoom.ingrandito ? 'true' : 'false'}
       // onCancel, non onClose. `cancel` scatta solo su una richiesta di
       // chiusura dell utente (Esc); `close` scatta per qualunque chiusura,
       // inclusa la nostra in fase di smontaggio. Collegare `close` fa
@@ -174,6 +187,7 @@ export function Lightbox({
           data-gesto={inGesto ? 'true' : 'false'}
         >
           <SanityImage
+            ref={fotografiaRef}
             photo={{ url: photo.url, aspectRatio: photo.ar, lqip: photo.lqip, alt: photo.alt, altLang: photo.altLang }}
             sizes={zoom.sizes}
             locale={locale}

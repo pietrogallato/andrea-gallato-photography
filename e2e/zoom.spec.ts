@@ -136,6 +136,75 @@ test('al tetto il comando spento non smorza il contorno del fuoco', async ({ pag
   expect(spento).not.toBe(acceso)
 })
 
+/**
+ * Il punto di tutta la modifica, in un test solo.
+ *
+ * Prima, ingrandire moltiplicava i pixel dentro una finestra che non cresceva
+ * mai: su uno schermo 1440x900 la superficie restava 702x702 — il 38% — sia a
+ * riposo sia al massimo dell ingrandimento. Ora quella finestra, quando si
+ * ingrandisce, diventa lo schermo.
+ *
+ * Si misura il rettangolo e non la classe CSS: una regola puo esserci ed
+ * essere scavalcata, e allora il test direbbe di si mentre l utente vede di no.
+ */
+test('ingrandendo, la cornice che ritaglia diventa il viewport', async ({ page }) => {
+  await apriPrima(page)
+  const superficie = page.locator('dialog figure > div')
+  const schermo = page.viewportSize()!
+
+  const riposo = (await superficie.boundingBox())!
+  expect(riposo.width).toBeLessThan(schermo.width)
+  expect(riposo.height).toBeLessThan(schermo.height)
+
+  await page.getByRole('button', { name: 'Ingrandisci la fotografia' }).click()
+
+  const ingrandita = (await superficie.boundingBox())!
+  // Tolleranza di un pixel: le altezze in dvh arrivano con dei decimali, e un
+  // arrotondamento non e la differenza che questo test vuole cogliere.
+  expect(Math.abs(ingrandita.width - schermo.width)).toBeLessThanOrEqual(1)
+  expect(Math.abs(ingrandita.height - schermo.height)).toBeLessThanOrEqual(1)
+  expect(ingrandita.x).toBeLessThanOrEqual(1)
+  expect(ingrandita.y).toBeLessThanOrEqual(1)
+})
+
+/**
+ * Espandendo la cornice, la fotografia si dipinge da subito piu grande: il
+ * tetto in cifre deve scendere, perche si parte da piu vicino ai pixel veri
+ * del file. Se non si ricalcolasse, resterebbe quello misurato a riposo e si
+ * ingrandirebbe oltre i pixel disponibili, cioe fino a vedere la sgranatura.
+ */
+test('espandendo la cornice il tetto si ricalcola', async ({ page }) => {
+  await apriPrima(page)
+
+  // Al tetto da riposo: il livello si ferma da solo, e il comando si spegne.
+  for (let i = 0; i < 10; i += 1) await page.keyboard.press('+')
+  await expect(page.getByRole('button', { name: 'Ingrandisci la fotografia' })).toHaveAttribute(
+    'aria-disabled',
+    'true',
+  )
+  const tettoDopoLEspansione = await livello(page)
+
+  // Quanto grande e la fotografia adesso, in pixel CSS: il prodotto fra il
+  // livello e la larghezza dipinta e il punto d arrivo, e non deve dipendere
+  // da quale delle due cornici si stia misurando.
+  const dipinta = await page.evaluate(() => {
+    const foto = document.querySelector('dialog figure > div > div') as HTMLElement
+    return foto.getBoundingClientRect().width
+  })
+  const arrivo = tettoDopoLEspansione * dipinta
+
+  await page.keyboard.press('0')
+  const aRiposo = await page.evaluate(() => {
+    const foto = document.querySelector('dialog figure > div > div') as HTMLElement
+    return foto.getBoundingClientRect().width
+  })
+
+  // A riposo si parte da piu lontano, quindi lo stesso arrivo costa un tetto
+  // piu alto: e la prova che il tetto non e rimasto quello di prima.
+  expect(dipinta).toBeGreaterThan(aRiposo)
+  expect(arrivo / aRiposo).toBeGreaterThan(tettoDopoLEspansione)
+})
+
 test('nessuna violazione axe con la fotografia ingrandita', async ({ page }) => {
   await apriPrima(page)
   await page.getByRole('button', { name: 'Ingrandisci la fotografia' }).click()
