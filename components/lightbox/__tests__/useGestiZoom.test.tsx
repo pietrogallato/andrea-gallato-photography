@@ -17,18 +17,25 @@ function riquadroFinto(el: HTMLElement, larghezza = 800, altezza = 600) {
     ({ width: larghezza, height: altezza, left: 0, top: 0, right: larghezza, bottom: altezza, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
 }
 
-function monta() {
+function monta({ indice = 5, quante = 24 }: { indice?: number; quante?: number } = {}) {
   const el = document.createElement('div')
   riquadroFinto(el)
   document.body.appendChild(el)
   const ref = { current: el }
+  const vai = vi.fn()
   const { result } = renderHook(() => {
     const zoom = useZoom({ id: 'a', url: GRANDE, fotografiaRef: ref, corniceRef: ref, sizesDiRiposo: '800px' })
-    const gesti = useGestiZoom({ superficieRef: ref, zoom })
+    const gesti = useGestiZoom({ superficieRef: ref, zoom, navigazione: { indice, quante, vai } })
     return { zoom, gesti }
   })
-  return { el, result }
+  return { el, result, vai }
 }
+
+/** Un quinto degli 800px del riquadro finto: la soglia dello swipe vale 160px. */
+const OLTRE_SOGLIA = 200
+const SOTTO_SOGLIA = 100
+/** Abbastanza lento da non passare per scatto: 100px in 2s sono 0,05px/ms. */
+const LENTO = 2000
 
 /**
  * jsdom 30 non costruisce PointerEvent con clientX/pointerId, e `timeStamp` e
@@ -245,5 +252,207 @@ describe('useGestiZoom', () => {
       vi.advanceTimersByTime(200)
     })
     expect(result.current.gesti.inGesto).toBe(false)
+  })
+})
+
+/**
+ * Il trascinamento che cambia fotografia. I conti stanno in lib/lightbox/swipe.ts
+ * e hanno i loro test; qui si guarda l'unica cosa che li non si vede — il
+ * collegamento a dita vere: chi decide quando, chi legge la larghezza, e
+ * soprattutto che a riposo e da ingranditi lo stesso gesto voglia dire due cose
+ * diverse.
+ */
+describe('useGestiZoom, lo swipe che cambia fotografia', () => {
+  it('a riposo un trascinamento oltre soglia porta alla fotografia successiva', () => {
+    const { el, result, vai } = monta()
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 400 - OLTRE_SOGLIA, y: 300, tempo: 1100 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 400 - OLTRE_SOGLIA, y: 300, tempo: 1000 + LENTO }))
+    })
+
+    expect(vai).toHaveBeenCalledWith(6)
+    expect(result.current.gesti.scarto).toBe(0)
+  })
+
+  it('a riposo, verso destra, si torna alla precedente', () => {
+    const { el, vai } = monta()
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 400 + OLTRE_SOGLIA, y: 300, tempo: 1100 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 400 + OLTRE_SOGLIA, y: 300, tempo: 1000 + LENTO }))
+    })
+
+    expect(vai).toHaveBeenCalledWith(4)
+  })
+
+  /**
+   * Mentre il dito trascina, la fotografia deve stargli sotto. Senza questo lo
+   * swipe sarebbe un interruttore nascosto: si trascina, non succede niente, e
+   * la fotografia cambia solo al rilascio.
+   */
+  it('la fotografia segue il dito durante il trascinamento', () => {
+    const { el, result } = monta()
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 280, y: 300, tempo: 1100 }))
+    })
+
+    expect(result.current.gesti.scarto).toBe(-120)
+  })
+
+  it('sotto la soglia non cambia fotografia e lo scarto torna a zero', () => {
+    const { el, result, vai } = monta()
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 400 - SOTTO_SOGLIA, y: 300, tempo: 1100 }))
+    })
+    expect(result.current.gesti.scarto).toBe(-SOTTO_SOGLIA)
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 400 - SOTTO_SOGLIA, y: 300, tempo: 1000 + LENTO }))
+    })
+
+    expect(vai).not.toHaveBeenCalled()
+    // Il ritorno elastico: la fotografia va rimessa al suo posto, o resterebbe
+    // di traverso per sempre.
+    expect(result.current.gesti.scarto).toBe(0)
+  })
+
+  /**
+   * Il cuore del criterio, ed e lo stesso che le frecce della tastiera
+   * applicano gia: a riposo il trascinamento sfoglia, da ingranditi sposta la
+   * vista dentro la fotografia. Sbagliando qui, chi ha ingrandito un dettaglio
+   * si ritroverebbe sulla fotografia dopo al primo tentativo di guardarlo.
+   */
+  it('da ingranditi lo stesso trascinamento sposta la vista e non naviga', () => {
+    const { el, result, vai } = monta()
+    act(() => result.current.zoom.versoLivello(3))
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 400 - OLTRE_SOGLIA, y: 300, tempo: 1100 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 400 - OLTRE_SOGLIA, y: 300, tempo: 1000 + LENTO }))
+    })
+
+    expect(vai).not.toHaveBeenCalled()
+    expect(result.current.zoom.pan.x).toBeLessThan(0)
+    // E la fotografia non deve nemmeno essere scivolata di lato: quello scarto
+    // e l'altro gesto.
+    expect(result.current.gesti.scarto).toBe(0)
+  })
+
+  /**
+   * La superficie ha `touch-action: none`, quindi nessun gesto viene piu
+   * interpretato dal browser: senza l'asse, un dito che scende per scorrere la
+   * pagina porterebbe via la fotografia di lato.
+   */
+  it('un trascinamento verticale non muove nulla e non naviga', () => {
+    const { el, result, vai } = monta()
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 380, y: 100, tempo: 1100 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 380, y: 100, tempo: 1150 }))
+    })
+
+    expect(vai).not.toHaveBeenCalled()
+    expect(result.current.gesti.scarto).toBe(0)
+  })
+
+  /**
+   * L'asse si fissa una volta sola. Un gesto partito in orizzontale che poi
+   * scende non e un gesto verticale: e la mano che ruota attorno al polso
+   * mentre trascina, e la fotografia non deve fermarsi a meta strada.
+   */
+  it('l asse fissato non si rimette in discussione', () => {
+    const { el, vai } = monta()
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 370, y: 305, tempo: 1050 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 400 - OLTRE_SOGLIA, y: 560, tempo: 1100 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 400 - OLTRE_SOGLIA, y: 560, tempo: 1000 + LENTO }))
+    })
+
+    expect(vai).toHaveBeenCalledWith(6)
+  })
+
+  /**
+   * Un secondo dito che scende e una pizzicata, non uno sfogliare. Senza
+   * annullare, chi pizzica per ingrandire partendo con un dito solo si
+   * ritroverebbe sulla fotografia successiva.
+   */
+  it('un secondo dito annulla lo swipe in corso', () => {
+    const { el, result, vai } = monta()
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 340, y: 300, tempo: 1050 }))
+    })
+    expect(result.current.gesti.scarto).toBe(-60)
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 2, x: 600, y: 300, tempo: 1100 }))
+    })
+    expect(result.current.gesti.scarto).toBe(0)
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerup', { id: 2, x: 600, y: 300, tempo: 1200 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 400 - OLTRE_SOGLIA, y: 300, tempo: 1300 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 400 - OLTRE_SOGLIA, y: 300, tempo: 1400 }))
+    })
+
+    expect(vai).not.toHaveBeenCalled()
+  })
+
+  /**
+   * Sull'ultima fotografia non c'e un dopo. La decisione sta in swipe.ts, ma
+   * che indice e quante arrivino freschi si vede solo da qui.
+   */
+  it('al bordo dell archivio non naviga, e la fotografia cede senza staccarsi dal dito', () => {
+    const { el, result, vai } = monta({ indice: 23, quante: 24 })
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 400 - OLTRE_SOGLIA, y: 300, tempo: 1100 }))
+    })
+    // Segue il dito, ma resta indietro: e il modo con cui il bordo si fa
+    // sentire senza spegnere nulla.
+    const seguito = result.current.gesti.scarto
+    expect(seguito).toBeLessThan(0)
+    expect(Math.abs(seguito)).toBeLessThan(OLTRE_SOGLIA)
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 400 - OLTRE_SOGLIA, y: 300, tempo: 1000 + LENTO }))
+    })
+    expect(vai).not.toHaveBeenCalled()
+    expect(result.current.gesti.scarto).toBe(0)
+  })
+
+  /**
+   * Due swipe di fila finiscono nello stesso punto e a pochi millisecondi
+   * l'uno dall'altro: per chi guarda solo i rilasci e un doppio tocco
+   * perfetto, e chi sfoglia si ritroverebbe la fotografia ingrandita in mano.
+   */
+  it('due swipe di fila non valgono un doppio tocco', () => {
+    const { el, result } = monta()
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 200, y: 300, tempo: 1100 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 200, y: 300, tempo: 1150 }))
+    })
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 2, x: 400, y: 300, tempo: 1200 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 2, x: 200, y: 300, tempo: 1300 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 2, x: 200, y: 300, tempo: 1350 }))
+    })
+
+    expect(result.current.zoom.livello).toBe(1)
   })
 })

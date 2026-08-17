@@ -26,6 +26,75 @@ test('naviga con le frecce', async ({ page }) => {
   await expect(page.getByRole('dialog')).not.toHaveAttribute('aria-label', first!)
 })
 
+/**
+ * Lo swipe, esercitato con `page.mouse`: sono eventi di puntatore autentici,
+ * consegnati agli stessi gestori che riceve un dito. In jsdom si surrogano
+ * `setPointerCapture` e la geometria, quindi cio che li resta indimostrato e
+ * proprio questo — che il gesto arrivi, che la cattura non lo dirotti, e che la
+ * fotografia si muova davvero sullo schermo.
+ */
+async function trascina(
+  page: import('@playwright/test').Page,
+  { dx, passi = 6, durataMs = 300 }: { dx: number; passi?: number; durataMs?: number },
+) {
+  const riquadro = (await page.locator('dialog figure > div').boundingBox())!
+  const y = riquadro.y + riquadro.height / 2
+  const partenza = riquadro.x + riquadro.width / 2
+  await page.mouse.move(partenza, y)
+  await page.mouse.down()
+  for (let i = 1; i <= passi; i += 1) {
+    await page.mouse.move(partenza + (dx * i) / passi, y)
+    await page.waitForTimeout(durataMs / passi)
+  }
+  return { riquadro, fine: { x: partenza + dx, y } }
+}
+
+/** Lo spostamento orizzontale davvero applicato alla fotografia, in pixel. */
+async function spostamentoDipinto(page: import('@playwright/test').Page): Promise<number> {
+  return page.evaluate(() => {
+    const img = document.querySelector('dialog figure img') as HTMLElement
+    return new DOMMatrixReadOnly(getComputedStyle(img).transform).m41
+  })
+}
+
+test('a riposo il trascinamento orizzontale cambia fotografia, e la fotografia segue il dito', async ({
+  page,
+}) => {
+  await openFirst(page)
+  const prima = await page.getByRole('dialog').getAttribute('aria-label')
+
+  // Un terzo della larghezza: oltre il quinto che decide, e senza contare
+  // sulla velocita, che qui non e governabile con precisione.
+  const riquadro = (await page.locator('dialog figure > div').boundingBox())!
+  const dx = -Math.round(riquadro.width / 3)
+  await trascina(page, { dx })
+
+  // Ancora col dito giu: la fotografia deve essere gia di traverso, o lo swipe
+  // sarebbe un interruttore nascosto che agisce solo al rilascio.
+  const seguito = await spostamentoDipinto(page)
+  expect(seguito).toBeLessThan(0)
+  expect(seguito).toBeCloseTo(dx, -1)
+
+  await page.mouse.up()
+  await expect(page.getByRole('dialog')).not.toHaveAttribute('aria-label', prima!)
+  // E rimessa dritta: la fotografia nuova non entra di traverso.
+  await expect.poll(() => spostamentoDipinto(page)).toBe(0)
+})
+
+test('un trascinamento corto non cambia fotografia e la rimette a posto', async ({ page }) => {
+  await openFirst(page)
+  const prima = await page.getByRole('dialog').getAttribute('aria-label')
+
+  const riquadro = (await page.locator('dialog figure > div').boundingBox())!
+  // Un decimo, cioe meta della soglia, e abbastanza lento da non passare per
+  // colpetto: 800ms per percorrerlo.
+  await trascina(page, { dx: -Math.round(riquadro.width / 10), durataMs: 800 })
+  await page.mouse.up()
+
+  await expect(page.getByRole('dialog')).toHaveAttribute('aria-label', prima!)
+  await expect.poll(() => spostamentoDipinto(page)).toBe(0)
+})
+
 test('rende inerte il contenuto sottostante', async ({ page }) => {
   await openFirst(page)
 

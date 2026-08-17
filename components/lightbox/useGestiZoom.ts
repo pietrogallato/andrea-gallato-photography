@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { puntoRispettoAlCentro, type Punto } from '@/lib/lightbox/zoom'
+import { asseDelGesto, decisioneSwipe, scartoConResistenza, type Asse } from '@/lib/lightbox/swipe'
 import type { useZoom } from './useZoom'
 
 /** Entro quanto tempo e quanto spazio due tocchi valgono per un doppio tocco. */
@@ -47,14 +48,21 @@ const SENSIBILITA_ROTELLA = 250
  */
 const FINE_ROTELLA_MS = 120
 
+/** Dove si e nell'archivio e come ci si sposta. Lo swipe non sa altro. */
+export type Navigazione = { indice: number; quante: number; vai: (prossimo: number) => void }
+
 export function useGestiZoom({
   superficieRef,
   zoom,
+  navigazione,
 }: {
   superficieRef: { current: HTMLElement | null }
   zoom: ReturnType<typeof useZoom>
+  navigazione: Navigazione
 }) {
   const [inGesto, setInGesto] = useState(false)
+  /** Di quanti pixel la fotografia sta seguendo il dito, adesso. */
+  const [scarto, setScarto] = useState(0)
 
   /**
    * L'oggetto restituito da useZoom e nuovo a ogni render. Metterlo fra le
@@ -67,6 +75,18 @@ export function useGestiZoom({
   const zoomRef = useRef(zoom)
   useEffect(() => {
     zoomRef.current = zoom
+  })
+
+  /**
+   * La navigazione passa da un ref per la stessa ragione, e qui il prezzo di
+   * sbagliare e piu alto: `indice` cambia a ogni fotografia sfogliata, quindi
+   * metterlo fra le dipendenze rimonterebbe i listener proprio mentre si
+   * sfoglia. Nessun test unitario lo vedrebbe — in jsdom il listener rimontato
+   * funziona uguale — e sul telefono lo swipe si romperebbe al secondo gesto.
+   */
+  const navigazioneRef = useRef(navigazione)
+  useEffect(() => {
+    navigazioneRef.current = navigazione
   })
 
   useEffect(() => {
@@ -95,7 +115,26 @@ export function useGestiZoom({
      * la fotografia ribalza a 2x da sola.
      */
     let pizzicata = false
+    /**
+     * Lo sfogliare in corso, se c'e. Porta con se da dove e partito e quando:
+     * il verdetto del rilascio si legge sull'intero gesto — distanza percorsa e
+     * tempo impiegato — non sull'ultimo spostamento, che e un pixel qualunque.
+     * L'asse vive qui perche si fissa una volta sola, e un asse ricalcolato a
+     * ogni movimento e un gesto che trema.
+     */
+    let swipe: { id: number; da: Punto; tempo: number; asse: Asse } | null = null
     let fineRotella: ReturnType<typeof setTimeout> | undefined
+
+    /** La fotografia dipinta: la soglia dello swipe e una frazione di questa. */
+    function larghezza(): number {
+      return el!.getBoundingClientRect().width
+    }
+
+    /** Rimette la fotografia al suo posto e dimentica il gesto. */
+    function annullaSwipe() {
+      swipe = null
+      setScarto(0)
+    }
 
     function relativo(x: number, y: number): Punto {
       const r = el!.getBoundingClientRect()
@@ -156,8 +195,23 @@ export function useGestiZoom({
 
       if (puntatori.size === 2) {
         agganciaCoppia()
+        // Due dita sono una pizzicata, non uno sfogliare. Chi comincia ad
+        // appoggiare la mano con un dito appena prima dell'altro si
+        // ritroverebbe sulla fotografia dopo invece che sulla stessa,
+        // ingrandita.
+        annullaSwipe()
       } else if (puntatori.size === 1) {
         ultimo = { x: event.clientX, y: event.clientY }
+        // Il gesto si registra sempre, anche da ingranditi: li non produrra
+        // nulla, perche l'asse non viene mai fissato. Decidere adesso quale
+        // dei due gesti sia sarebbe decidere sul dito appena sceso, che non ha
+        // ancora detto niente.
+        swipe = {
+          id: event.pointerId,
+          da: { x: event.clientX, y: event.clientY },
+          tempo: event.timeStamp,
+          asse: 'indeciso',
+        }
       }
       setInGesto(true)
     }
@@ -174,11 +228,50 @@ export function useGestiZoom({
       if (puntatori.size === 1 && ultimo && zoomRef.current.ingrandito) {
         zoomRef.current.sposta({ x: event.clientX - ultimo.x, y: event.clientY - ultimo.y })
         ultimo = { x: event.clientX, y: event.clientY }
+        return
+      }
+
+      // Lo stesso trascinamento, a riposo, sfoglia: e il criterio che le frecce
+      // della tastiera applicano gia. I due stati sono visibilmente diversi —
+      // a riposo la fotografia sta tutta dentro lo schermo — quindi lo stesso
+      // gesto non risulta ambiguo a chi lo fa.
+      if (puntatori.size === 1 && swipe && swipe.id === event.pointerId) {
+        const dx = event.clientX - swipe.da.x
+        const dy = event.clientY - swipe.da.y
+        // Una volta sola: dal momento in cui l'asse e leggibile in poi il gesto
+        // non cambia piu mestiere, anche se la mano ruota attorno al polso.
+        if (swipe.asse === 'indeciso') swipe.asse = asseDelGesto({ dx, dy })
+        if (swipe.asse !== 'orizzontale') return
+        const { indice, quante } = navigazioneRef.current
+        setScarto(scartoConResistenza({ dx, larghezza: larghezza(), indice, quante }))
       }
     }
 
     function su(event: PointerEvent) {
       if (!puntatori.has(event.pointerId)) return
+
+      // Il dito si alza: lo sfogliare o si compie o torna indietro. Il verdetto
+      // si legge sul gesto intero, ed e per questo che la partenza va ricordata.
+      const sfogliava = swipe
+      swipe = null
+      if (sfogliava && sfogliava.id === event.pointerId && sfogliava.asse === 'orizzontale') {
+        const { indice, quante, vai } = navigazioneRef.current
+        const decisione = decisioneSwipe({
+          dx: event.clientX - sfogliava.da.x,
+          durataMs: event.timeStamp - sfogliava.tempo,
+          larghezza: larghezza(),
+          indice,
+          quante,
+        })
+        if (decisione === 'avanti') vai(indice + 1)
+        else if (decisione === 'indietro') vai(indice - 1)
+      }
+      // Sempre, non solo quando si annulla: cambiando fotografia la successiva
+      // entrerebbe gia di traverso, spostata di quanto era arrivato il dito.
+      // Con `data-gesto` che qui torna falso, questo zero e anche il ritorno
+      // elastico, ed e una transizione CSS proprio perche chi ha chiesto meno
+      // movimento possa fermarla.
+      setScarto(0)
 
       // Doppio tocco, riconosciuto a mano invece che con `dblclick`: con
       // touch-action `none` il doppio tocco non e garantito arrivare come
@@ -288,5 +381,5 @@ export function useGestiZoom({
     // ogni render romperebbe il gesto invece di aggiornarlo.
   }, [superficieRef])
 
-  return { inGesto }
+  return { inGesto, scarto }
 }
