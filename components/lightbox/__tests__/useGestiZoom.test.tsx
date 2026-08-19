@@ -446,6 +446,134 @@ describe('useGestiZoom, lo swipe che cambia fotografia', () => {
   })
 
   /**
+   * Il gesto piu naturale su un telefono, perche in una lightbox si viene a
+   * GUARDARE prima che a sfogliare: si appoggia il dito, si resta fermi a
+   * guardare, e poi si da il colpetto. Misurando la velocita sull'intero gesto
+   * quel tempo fermo finisce al denominatore e schiaccia la media — 60px in
+   * 914ms sono 0,065px/ms contro i 0,5 che decidono — e il colpetto piu secco
+   * non basta. Chi lo da vede la fotografia spostarsi sotto il dito e poi
+   * tornare indietro come se il gesto non fosse mai stato abbastanza.
+   */
+  it('un colpetto dato dopo una pausa col dito appoggiato cambia lo stesso fotografia', () => {
+    const { el, vai } = monta()
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      // Novecento millisecondi fermi, poi quattro spostamenti da 15px in dodici
+      // millisecondi: 60px complessivi, cioe sotto il quinto che decide per
+      // distanza, ma percorsi a 3px/ms.
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 385, y: 300, tempo: 1900 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 370, y: 300, tempo: 1904 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 355, y: 300, tempo: 1908 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 340, y: 300, tempo: 1912 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 340, y: 300, tempo: 1914 }))
+    })
+
+    expect(vai).toHaveBeenCalledWith(6)
+  })
+
+  /**
+   * Il verso opposto dello stesso conto, e va tenuto insieme all'altro:
+   * guardare solo la coda non deve trasformare ogni trascinamento lento in un
+   * colpetto. Qui il gesto intero e lento e resta sotto la soglia — chi
+   * trascinava per guardare e poi ha lasciato andare — ma i suoi ultimi
+   * millisecondi, presi con lo spostamento complessivo al numeratore,
+   * sembrerebbero velocissimi.
+   */
+  it('un trascinamento lento sotto soglia non diventa un colpetto per via della sua coda', () => {
+    const { el, vai } = monta()
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 310, y: 300, tempo: 1500 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 300, y: 300, tempo: 3000 }))
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 300, y: 300, tempo: 3005 }))
+    })
+
+    expect(vai).not.toHaveBeenCalled()
+  })
+
+  /**
+   * `pointercancel` dice l'opposto di `pointerup`: il gesto NON e stato
+   * compiuto, il sistema se l'e preso. Sul telefono il caso vero e lo swipe che
+   * parte vicino al bordo dello schermo, dove il gesto di ritorno del sistema
+   * lo intercetta: decidere quel gesto come un rilascio vero vorrebbe dire
+   * tornare alla pagina precedente E trovarsi la fotografia cambiata sotto.
+   */
+  it('un gesto portato via dal sistema annulla invece di decidere', () => {
+    const { el, result, vai } = monta()
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 400 - OLTRE_SOGLIA, y: 300, tempo: 1100 }))
+    })
+    expect(result.current.gesti.scarto).toBe(-OLTRE_SOGLIA)
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointercancel', { id: 1, x: 400 - OLTRE_SOGLIA, y: 300, tempo: 1150 }))
+    })
+
+    expect(vai).not.toHaveBeenCalled()
+    expect(result.current.gesti.scarto).toBe(0)
+  })
+
+  /**
+   * L'ingrandimento puo spegnersi A META GESTO: Esc col dito ancora giu, che
+   * per scelta dichiarata non chiude ma torna a schermo intero. Da li in poi il
+   * trascinamento in corso e ancora quello di prima — spostava la vista — ma
+   * riletto dall'origine diventa uno sfogliare gia oltre soglia: due pixel di
+   * dito e la fotografia salta di duecento, poi cambia da sola. Chi voleva solo
+   * uscire dall'ingrandimento si ritrova su un altro scatto.
+   */
+  it('lo zoom che si spegne col dito giu non fa saltare la fotografia ne cambia scatto', () => {
+    const { el, result, vai } = monta()
+    act(() => result.current.zoom.versoLivello(3))
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 400 - OLTRE_SOGLIA, y: 300, tempo: 1100 }))
+    })
+    // Spostava la vista: la fotografia non e scivolata di lato.
+    expect(result.current.gesti.scarto).toBe(0)
+
+    act(() => result.current.zoom.azzera())
+    act(() => {
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 400 - OLTRE_SOGLIA - 2, y: 300, tempo: 1200 }))
+    })
+    expect(result.current.gesti.scarto).toBe(0)
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 400 - OLTRE_SOGLIA - 2, y: 300, tempo: 1000 + LENTO }))
+    })
+    expect(vai).not.toHaveBeenCalled()
+  })
+
+  /**
+   * Il verso speculare: l'ingrandimento si accende mentre lo swipe e in corso.
+   * Lo scarto gia dipinto resta congelato e si somma all'ingrandimento — la
+   * fotografia sta di traverso senza che nessun dito la tenga — e al rilascio
+   * si sfoglia da ingranditi, che e esattamente il criterio che tutto il gesto
+   * dichiara di rispettare.
+   */
+  it('lo zoom che si accende col dito giu non lascia lo scarto congelato ne sfoglia', () => {
+    const { el, result, vai } = monta()
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerdown', { id: 1, x: 400, y: 300, tempo: 1000 }))
+      el.dispatchEvent(puntatore('pointermove', { id: 1, x: 400 - OLTRE_SOGLIA, y: 300, tempo: 1100 }))
+    })
+    expect(result.current.gesti.scarto).toBe(-OLTRE_SOGLIA)
+
+    act(() => result.current.zoom.ingrandisci())
+    expect(result.current.gesti.scarto).toBe(0)
+
+    act(() => {
+      el.dispatchEvent(puntatore('pointerup', { id: 1, x: 400 - OLTRE_SOGLIA, y: 300, tempo: 1000 + LENTO }))
+    })
+    expect(vai).not.toHaveBeenCalled()
+  })
+
+  /**
    * Due swipe di fila finiscono nello stesso punto e a pochi millisecondi
    * l'uno dall'altro: per chi guarda solo i rilasci e un doppio tocco
    * perfetto, e chi sfoglia si ritroverebbe la fotografia ingrandita in mano.
