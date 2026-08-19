@@ -29,6 +29,26 @@
   border-bottom: var(--header-border) solid color-mix(in oklab, var(--fg) 9%, transparent);
 }
 
+/* Un elemento con `backdrop-filter` diventa il blocco contenitore dei suoi
+   discendenti `position: fixed`. Il pannello del menu e un discendente
+   dell header nel DOM, quindi col filtro acceso il suo `inset: 0` non si
+   riferisce piu allo schermo ma all header: il menu aperto copriva una striscia
+   in cima e le voci restavano tagliate a meta.
+
+   **Misurato il 2026-08-17** su WebKit, il motore di Safari e — per obbligo di
+   piattaforma — di ogni browser su iPhone: pannello alto 157px su 852 di
+   schermo col filtro, 852 togliendolo, di nuovo 157 rimettendolo. Su Chromium
+   lo stesso pannello e sempre 852, ed e il motivo per cui su Android il difetto
+   non si vedeva.
+
+   Spegnerlo mentre il menu e aperto non toglie nulla a nessuno: dietro l header
+   c e il pannello, che e opaco, quindi non resta niente da sfocare. La
+   traslucidita serve sopra le fotografie, e li resta. */
+.header:has([data-pannello-menu]:not([hidden])) {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 @supports not (backdrop-filter: blur(1px)) {
   .header {
     background: var(--bg);

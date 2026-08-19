@@ -49,7 +49,10 @@ export function MobileMenu({
         {open ? dict.closeMenu : dict.openMenu}
       </button>
 
-      <div id={panelId} className={styles.panel} hidden={!open}>
+      {/* L attributo, e non la classe: la regola che lo cerca vive in
+          Header.module.css, dove il nome con l hash di questo modulo non arriva.
+          Il perche di quella regola e scritto li. */}
+      <div id={panelId} data-pannello-menu className={styles.panel} hidden={!open}>
         <PrimaryNav
           locale={locale}
           dict={dict}

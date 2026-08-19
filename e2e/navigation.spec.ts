@@ -196,6 +196,44 @@ test('il menu aperto parte sotto l header, senza il vuoto di prima', async ({ pa
   expect(prima!.y).toBeLessThan(header!.y + header!.height + 120)
 })
 
+/**
+ * Regressione riportata dall utente su iPhone: aperto il menu, il pannello
+ * copriva una striscia in cima allo schermo e la voce «Progetti» restava
+ * tagliata a meta. Sullo stesso sito, da Android, si vedeva giusto.
+ *
+ * La causa non e il menu: un elemento con `backdrop-filter` diventa il blocco
+ * contenitore dei suoi discendenti `position: fixed`, e il pannello e un
+ * discendente dell header, che il filtro ce l ha. Col filtro acceso il suo
+ * `inset: 0` non si riferisce piu allo schermo ma all header.
+ *
+ * **Misurato il 2026-08-17**: 157px di pannello su 852 di schermo col filtro,
+ * 852 togliendolo, di nuovo 157 rimettendolo. Su Chromium sempre 852, ed e il
+ * motivo per cui il difetto si vedeva solo su un telefono. Questo test gira
+ * anche sul progetto webkit, che e il motore di ogni browser su iPhone: e li
+ * che deve mordere.
+ */
+test('il pannello del menu copre tutto lo schermo, non una striscia', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'il menu a pannello esiste solo sotto il breakpoint')
+
+  await page.goto('/it')
+  await page.getByRole('button', { name: 'Apri il menu' }).click()
+
+  const misure = await page.evaluate(() => {
+    const pannello = document.querySelector('[data-pannello-menu]') as HTMLElement
+    const voci = [...pannello.querySelectorAll('a')]
+    return {
+      altezza: pannello.getBoundingClientRect().height,
+      schermo: window.innerHeight,
+      fondoDellUltimaVoce: voci[voci.length - 1].getBoundingClientRect().bottom,
+    }
+  })
+
+  expect(misure.altezza).toBeGreaterThanOrEqual(misure.schermo - 1)
+  // Il sintomo che l utente ha visto: col pannello schiacciato l ultima voce
+  // cadeva fuori dallo schermo, tagliata a meta.
+  expect(misure.fondoDellUltimaVoce).toBeLessThanOrEqual(misure.schermo)
+})
+
 test('la voce della pagina corrente e segnata', async ({ page, isMobile }) => {
   await page.goto('/it/fotografie')
   if (isMobile) await page.getByRole('button', { name: 'Apri il menu' }).click()
