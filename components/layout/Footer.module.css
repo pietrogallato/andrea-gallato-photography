@@ -30,8 +30,11 @@
   transition: color var(--duration-fast) var(--ease);
 }
 
+/* Il passaggio del mouse accende la terra invece del bianco. Il confine resta
+   quello dichiarato nei token: qui siamo su interfaccia, mai sopra uno scatto —
+   i comandi della lightbox, che stanno sulla fotografia, restano al bianco. */
 .link:hover {
-  color: var(--fg);
+  color: var(--accent-testo);
 }
 
 .link::before {

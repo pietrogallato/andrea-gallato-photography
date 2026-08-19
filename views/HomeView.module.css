@@ -115,7 +115,14 @@
   animation-delay: 460ms;
 }
 
+/* La terra solo al passaggio, non da ferma: questo invito sta SOPRA la
+   fotografia d apertura, che riempie lo schermo. Un accento fermo li dentro
+   sarebbe un colore in competizione con lo scatto, che e esattamente il
+   confine tracciato nei token. Al passaggio del mouse invece e un momento, e
+   in quel momento la fotografia non e piu la sola cosa a cui si sta
+   guardando. */
 .enter:hover,
 .enter:focus-visible {
-  border-bottom-color: var(--fg);
+  color: var(--accent-testo);
+  border-bottom-color: var(--accent-testo);
 }

@@ -21,7 +21,14 @@
   transition: color var(--duration-fast) var(--ease);
 }
 
-.trigger:hover,
+.trigger:hover {
+  color: var(--accent-testo);
+}
+
+/* A menu aperto resta bianco: li il colore non e un passaggio del mouse, e lo
+   stato attivo, e nel pannello la gerarchia la fa il contrasto — la voce
+   corrente e l unica piena, le altre smorzate. Una terra a meta strada
+   confonderebbe le due cose. */
 .trigger[aria-expanded='true'] {
   color: var(--fg);
 }
