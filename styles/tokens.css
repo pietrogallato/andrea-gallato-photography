@@ -22,9 +22,9 @@
   /* Grigi caldi al posto dei neutri: e qui che la palette cambia davvero,
      perche `--fg-muted` colora quasi tutto cio che non e una fotografia —
      etichette, didascalie, navigazione, voci non correnti, piede di pagina.
-     **Misurato il 2026-08-19:** 7,17:1 su `--bg`, dove ne servono 4,5. Il
-     grigio di prima ne faceva 6,05. */
-  --fg-muted: #a09a90;
+     **Misurato il 2026-08-19:** 7,84:1 su `--bg`, dove ne servono 4,5. Il
+     neutro di partenza ne faceva 6,05. */
+  --fg-muted: #ada094;
   --border: #2b2724;
 
   /* Il clay. Compare in tre soli posti — il contorno del fuoco, il segno
@@ -36,6 +36,14 @@
      ne chiede 3 (WCAG 1.4.11) e la barra dell anteprima, che ci scrive sopra
      in scuro, 4,5. */
   --accent: #d97757;
+
+  /* La stessa terra, piu chiara, per il testo che si accende al passaggio.
+     Non e un vezzo: il clay canonico sta a 6,41:1 e il grigio caldo a 7,84,
+     quindi usarlo sul testo farebbe SCURIRE cio che si sta indicando — il
+     contrario di quel che un passaggio del mouse deve fare. Questa tinta sta
+     a 8,91:1, quindi accende e vira insieme.
+     **Misurato il 2026-08-19.** */
+  --accent-testo: #e89a7d;
 
   /* Il contorno del fuoco e il clay, ma passa da un token suo: sono due cose
      diverse che oggi hanno lo stesso colore, e chi un domani cambiasse l uno
