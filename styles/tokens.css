@@ -3,12 +3,44 @@
 :root {
   color-scheme: dark;
 
+  /* I DUE SFONDI RESTANO NEUTRI, ed e una scelta, non una dimenticanza.
+     Su un sito di fotografie lo sfondo non e un elemento della palette: e lo
+     strumento con cui si guardano le immagini. Un contorno caldo fa leggere
+     piu fredda ogni fotografia — e contrasto simultaneo, ed e la ragione per
+     cui le gallerie usano il nero neutro e Lightroom il grigio neutro. Le
+     ventiquattro fotografie non sono state ritoccate per stare su un fondo
+     caldo, quindi il fondo non si scalda.
+
+     `--bg-elevated` in particolare NON e un colore di superficie qualunque:
+     e cio che si vede dietro ogni fotografia mentre arriva e nelle bande di
+     un riquadro che non ha il suo stesso rapporto (SanityImage.module.css,
+     PhotoTile.module.css). E il piu vicino di tutti agli scatti. */
   --bg: #08080a;
   --bg-elevated: #101013;
+
   --fg: #f2f0ed;
-  --fg-muted: #8f8d8a;
-  --border: #232327;
-  --focus-ring: #7fb2ff;
+  /* Grigi caldi al posto dei neutri: e qui che la palette cambia davvero,
+     perche `--fg-muted` colora quasi tutto cio che non e una fotografia —
+     etichette, didascalie, navigazione, voci non correnti, piede di pagina.
+     **Misurato il 2026-08-19:** 7,17:1 su `--bg`, dove ne servono 4,5. Il
+     grigio di prima ne faceva 6,05. */
+  --fg-muted: #a09a90;
+  --border: #2b2724;
+
+  /* Il clay. Compare in tre soli posti — il contorno del fuoco, il segno
+     della pagina corrente e la barra dell anteprima — e in nessuno di questi
+     tocca una fotografia. Un accento che comparisse accanto agli scatti
+     competerebbe con loro, ed e l unica cosa che una galleria non puo
+     permettersi.
+     **Misurato il 2026-08-19:** 6,41:1 su `--bg`, dove il contorno del fuoco
+     ne chiede 3 (WCAG 1.4.11) e la barra dell anteprima, che ci scrive sopra
+     in scuro, 4,5. */
+  --accent: #d97757;
+
+  /* Il contorno del fuoco e il clay, ma passa da un token suo: sono due cose
+     diverse che oggi hanno lo stesso colore, e chi un domani cambiasse l uno
+     non deve trascinarsi dietro l altro senza accorgersene. */
+  --focus-ring: var(--accent);
   /* Canali separati da spazi, non da virgole: il token esiste per finire
      dentro `rgb(var(--scrim) / <alpha>)`, e quella forma accetta solo la
      sintassi moderna. Con le virgole la dichiarazione diventa
