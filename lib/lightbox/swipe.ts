@@ -26,6 +26,11 @@ export type Decisione = 'avanti' | 'indietro' | 'annulla'
  * slop di Android e 8dp). Sotto c'e il tremolio del dito appoggiato, sopra c'e
  * un'intenzione. **Non misurata qui**: e presa da quella convenzione, non da
  * una prova su questo sito.
+ *
+ * **Provata a mano il 19 agosto 2026**, su un telefono vero, col protocollo §3:
+ * il gesto risponde come atteso e la soglia non e stata corretta. Resta scelta
+ * e non misurata — la prova dice che funziona, non che questo sia il valore
+ * migliore possibile.
  */
 export const IMPEGNO_PX = 10
 
@@ -39,8 +44,12 @@ export const IMPEGNO_PX = 10
  * **Scelta il 2026-08-17, non misurata su utenti**: un quinto e il valore che
  * iOS e Android usano nei loro sfogliatori, e sui 380px del telefono fa 76px,
  * cioe circa mezzo pollice — abbastanza da non scattare per sbaglio mentre si
- * regge il telefono, poco abbastanza da non dover attraversare lo schermo. Va
- * confermata nel protocollo manuale insieme al resto dei gesti.
+ * regge il telefono, poco abbastanza da non dover attraversare lo schermo.
+ *
+ * **Provata a mano il 19 agosto 2026**, su un telefono vero, col protocollo §3:
+ * il gesto risponde come atteso e la soglia non e stata corretta. Resta scelta
+ * e non misurata — la prova dice che funziona, non che questo sia il valore
+ * migliore possibile.
  */
 export const FRAZIONE_SOGLIA = 0.2
 
@@ -56,7 +65,12 @@ export const FRAZIONE_SOGLIA = 0.2
  * potuto registrare la velocita di un colpetto reale. Il ragionamento e che un
  * rilascio senza intenzione resta sotto i 200px/s, mentre un colpetto voluto li
  * supera comodamente; il margine fra i due e largo, quindi il valore esatto
- * conta poco. Da confermare a mano.
+ * conta poco.
+ *
+ * **Provata a mano il 19 agosto 2026**, su un telefono vero, col protocollo §3:
+ * il gesto risponde come atteso e la soglia non e stata corretta. Resta scelta
+ * e non misurata — la prova dice che funziona, non che questo sia il valore
+ * migliore possibile.
  */
 export const VELOCITA_SCATTO_PX_MS = 0.5
 
@@ -69,6 +83,11 @@ export const VELOCITA_SCATTO_PX_MS = 0.5
  * **Scelto, non misurato** — vedi il §3 di
  * docs/verifiche/protocolli-verifiche-manuali.md, che dice da quale sintomo si
  * riconosce che e questa la soglia sbagliata.
+ *
+ * **Provata a mano il 19 agosto 2026**, su un telefono vero, col protocollo §3:
+ * il gesto risponde come atteso e la soglia non e stata corretta. Resta scelta
+ * e non misurata — la prova dice che funziona, non che questo sia il valore
+ * migliore possibile.
  */
 export const MINIMO_SCATTO_PX = 3 * IMPEGNO_PX
 
@@ -81,6 +100,11 @@ export const MINIMO_SCATTO_PX = 3 * IMPEGNO_PX
  * riuscito a meta. **Scelto, non misurato** — vedi il §3 di
  * docs/verifiche/protocolli-verifiche-manuali.md, che dice da quale sintomo si
  * riconosce che e questa la soglia sbagliata.
+ *
+ * **Provata a mano il 19 agosto 2026**, su un telefono vero, col protocollo §3:
+ * il gesto risponde come atteso e la soglia non e stata corretta. Resta scelta
+ * e non misurata — la prova dice che funziona, non che questo sia il valore
+ * migliore possibile.
  */
 export const CEDIMENTO_AL_BORDO = 0.25
 

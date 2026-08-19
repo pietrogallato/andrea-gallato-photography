@@ -61,7 +61,10 @@ const FINE_ROTELLA_MS = 120
  * grandezza della CODA del gesto, mentre la distanza resta una grandezza del
  * gesto intero.
  *
- * **Finestra scelta il 2026-08-17, non misurata su dita vere**: 100ms sono sei
+ * **Provata a mano il 19 agosto 2026** su un telefono vero, col protocollo §3
+ * passo 8: il colpetto corto viene raccolto, e la finestra non e stata corretta.
+ *
+ * **Scelta il 2026-08-17, non misurata su dita vere**: 100ms sono sei
  * fotogrammi a 60Hz, cioe abbastanza campioni perche la media non dipenda da
  * un singolo evento, e abbastanza pochi da non riprendere dentro il tempo in
  * cui il dito stava fermo a guardare.

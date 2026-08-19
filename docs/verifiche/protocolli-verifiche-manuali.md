@@ -99,6 +99,21 @@ riproducibile, e finirà per non essere corretto.
 
 ## 3. I gesti, su un telefono vero
 
+> **Esito, 19 agosto 2026 — passata.** Fatta da Pietro su un telefono vero: i gesti
+> rispondono come atteso e **nessuna delle cinque soglie è stata corretta**. Le diciture
+> «scelta, non misurata» accanto a `FRAZIONE_SOGLIA`, `VELOCITA_SCATTO_PX_MS`,
+> `MINIMO_SCATTO_PX`, `CEDIMENTO_AL_BORDO` e `IMPEGNO_PX` in `lib/lightbox/swipe.ts`, e
+> accanto a `CODA_MS` in `components/lightbox/useGestiZoom.ts`, portano ora la conferma con
+> la data.
+>
+> Resta scelta e non misurata `FINE_ROTELLA_MS`, che riguarda la pizzicata sul **trackpad**:
+> una prova col telefono non la tocca.
+>
+> Resta aperto il **passo 5**, che non è un sì o un no ma un giudizio: se al tetto le
+> fotografie da 1080 px si vedano sgranate. Da quello dipende `MOLTIPLICATORE_MINIMO` in
+> `lib/lightbox/zoom.ts`, oggi fermo a 2×.
+
+
 **Perché non è automatizzabile.** `Touchscreen` di Playwright dichiara di emulare soltanto
 i gesti di tap; il progetto `iphone` gira su WebKit, quindi non c'è un CDP a cui ripiegare;
 e i `TouchEvent` costruiti a mano non generano Pointer Events. Rotella, doppio clic e
