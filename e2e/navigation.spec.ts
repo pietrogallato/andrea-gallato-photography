@@ -176,24 +176,61 @@ test('a menu aperto restano visibili il nome del sito e la chiusura', async ({ p
   await expect(page.getByRole('button', { name: 'Apri il menu' })).toBeVisible()
 })
 
-test('il menu aperto parte sotto l header, senza il vuoto di prima', async ({ page, isMobile }) => {
+/**
+ * Sostituisce «il menu aperto parte sotto l header, senza il vuoto di prima».
+ *
+ * Quel test prendeva il primo link del pannello per verificare che le voci non
+ * fossero centrate con un vuoto sopra e uno sotto. Due cose lo hanno reso
+ * obsoleto insieme: il pannello adesso e progettato al contrario — le voci si
+ * DISTRIBUISCONO sull altezza invece di partire in cima — e, passate le lingue
+ * in testa, il primo link del pannello non era piu una voce di navigazione ma
+ * «IT». Continuava a passare misurando un elemento di cui non parlava, che e
+ * il modo peggiore in cui un test puo sopravvivere a un cambio di design.
+ *
+ * **Misurato il 2026-08-17** a 412x915: prima le voci occupavano 219px e
+ * lasciavano 463px di nero fra loro e il fondo, cioe il 51% dello schermo
+ * vuoto; adesso ne occupano 553, il 60%.
+ */
+test('le voci del menu riempiono il pannello invece di impilarsi in cima', async ({
+  page,
+  isMobile,
+}) => {
   test.skip(!isMobile, 'il menu a pannello esiste solo sotto il breakpoint')
 
   await page.goto('/it/fotografie')
-  const header = await page.locator('header').boundingBox()
   await page.getByRole('button', { name: 'Apri il menu' }).click()
 
-  // Il pannello si raggiunge dall attributo che il trigger gia dichiara,
-  // invece di indovinarne l id generato o la classe con l hash del modulo.
-  const panelId = await page
-    .getByRole('button', { name: 'Chiudi il menu' })
-    .getAttribute('aria-controls')
-  const prima = await page.locator(`[id="${panelId}"] nav a`).first().boundingBox()
+  // La navigazione per nome, non il primo `a` che capita: nel pannello ci sono
+  // anche i due link della lingua, ed e proprio confonderli con le voci che ha
+  // svuotato di senso il test precedente.
+  const voci = page.getByRole('navigation', { name: 'Navigazione principale' }).getByRole('link')
+  await expect(voci).toHaveCount(4)
 
-  // La prima voce inizia poco sotto l header: prima il pannello centrava il
-  // contenuto e lasciava un vuoto sopra e uno sotto.
-  expect(prima!.y).toBeGreaterThan(header!.y + header!.height)
-  expect(prima!.y).toBeLessThan(header!.y + header!.height + 120)
+  const misure = await page.evaluate(() => {
+    // Per nome anche qui: `nav[aria-label]` senza valore prende il primo, che
+    // e quello delle lingue — cioe lo stesso inciampo del test che questo
+    // sostituisce.
+    const nav = document.querySelector(
+      '[data-pannello-menu] nav[aria-label="Navigazione principale"]',
+    )!
+    const link = [...nav.querySelectorAll('a')]
+    const primo = link[0].getBoundingClientRect()
+    const ultima = link[link.length - 1].getBoundingClientRect()
+    return {
+      bloccoVoci: ultima.bottom - primo.top,
+      schermo: window.innerHeight,
+      fondoDellUltima: ultima.bottom,
+      areaTattileMinima: Math.min(...link.map((a) => a.getBoundingClientRect().height)),
+    }
+  })
+
+  // Meta schermo e la soglia sotto cui il vuoto ricomincia a dominare: col
+  // layout precedente le voci ne coprivano un quarto.
+  expect(misure.bloccoVoci).toBeGreaterThan(misure.schermo * 0.5)
+  expect(misure.fondoDellUltima).toBeLessThanOrEqual(misure.schermo)
+  // Le voci sono anche i bersagli da toccare: distribuirle non deve averne
+  // fatto strisce sottili.
+  expect(misure.areaTattileMinima).toBeGreaterThanOrEqual(44)
 })
 
 /**

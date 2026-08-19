@@ -71,6 +71,43 @@ describe('PrimaryNav', () => {
     expect(screen.getByRole('link', { name: dict.navProjects })).not.toHaveAttribute('aria-current')
   })
 
+  it('aggiunge la voce Home solo a chi la chiede', () => {
+    const { unmount } = render(<PrimaryNav locale="it" dict={dict} />)
+    expect(screen.queryByRole('link', { name: dict.navHome })).toBeNull()
+    unmount()
+
+    render(<PrimaryNav locale="it" dict={dict} conHome />)
+    expect(screen.getByRole('link', { name: dict.navHome })).toHaveAttribute('href', '/it')
+  })
+
+  it('accende Home quando si e sulla home', () => {
+    setPath('/it')
+    render(<PrimaryNav locale="it" dict={dict} conHome />)
+
+    expect(screen.getByRole('link', { name: dict.navHome })).toHaveAttribute('aria-current', 'page')
+  })
+
+  /**
+   * La sola eccezione alla regola del prefisso, e va tenuta sotto test perche
+   * sbagliarla non rompe nulla: accende semplicemente Home dappertutto, e la
+   * voce accesa smette di dire dove si e — che e tutto il suo mestiere.
+   * L indirizzo della home e la radice della lingua, e ogni percorso comincia
+   * di li.
+   */
+  it('non accende Home sulle altre pagine, benche ogni percorso cominci per /it', () => {
+    for (const percorso of ['/it/fotografie', '/it/progetti', '/it/about', '/it/progetti/concorso-trieste']) {
+      setPath(percorso)
+      const { unmount } = render(<PrimaryNav locale="it" dict={dict} conHome />)
+
+      expect(
+        screen.getByRole('link', { name: dict.navHome }),
+        `Home accesa su ${percorso}`,
+      ).not.toHaveAttribute('aria-current')
+
+      unmount()
+    }
+  })
+
   it('avvisa chi lo ospita quando si sceglie una voce, cosi il menu si chiude', async () => {
     const onNavigate = vi.fn()
     render(<PrimaryNav locale="it" dict={dict} onNavigate={onNavigate} />)
