@@ -52,7 +52,7 @@
   height: 1px;
   /* Meta della larghezza totale meno meta dello spazio fra i codici. */
   width: calc((100% - var(--space-3)) / 2);
-  background: var(--fg);
+  background: var(--accent);
   transition: transform var(--duration-slow) var(--ease-out);
 }
 

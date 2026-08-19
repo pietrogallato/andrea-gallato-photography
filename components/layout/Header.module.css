@@ -157,7 +157,9 @@
   right: 0;
   bottom: 0;
   height: 1px;
-  background: currentColor;
+  /* Il clay, non `currentColor`: il sottolineato e un segno, e il segno ha un
+     colore suo. Il testo sopra resta quello che era. */
+  background: var(--accent);
   transform: scaleX(0);
   transition: transform var(--duration-slow) var(--ease-out);
 }
