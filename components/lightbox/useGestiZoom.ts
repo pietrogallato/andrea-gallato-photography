@@ -48,6 +48,26 @@ const SENSIBILITA_ROTELLA = 250
  */
 const FINE_ROTELLA_MS = 120
 
+/**
+ * Quanto indietro si guarda per misurare la velocita di un colpetto.
+ *
+ * La velocita non si puo leggere sull'intero gesto: in una lightbox si viene a
+ * GUARDARE prima che a sfogliare, quindi il dito si appoggia, resta fermo, e
+ * solo dopo da il colpetto. Quel tempo morto finirebbe al denominatore e
+ * schiaccerebbe la media — **misurato il 2026-08-17** su build di produzione,
+ * chromium, webkit e iPhone: lo stesso identico colpetto da 60px cambia
+ * fotografia con pausa zero e non la cambia con 900ms di pausa, perche 60px su
+ * 914ms fanno 0,065px/ms contro i 0,5 che decidono. La velocita e percio una
+ * grandezza della CODA del gesto, mentre la distanza resta una grandezza del
+ * gesto intero.
+ *
+ * **Finestra scelta il 2026-08-17, non misurata su dita vere**: 100ms sono sei
+ * fotogrammi a 60Hz, cioe abbastanza campioni perche la media non dipenda da
+ * un singolo evento, e abbastanza pochi da non riprendere dentro il tempo in
+ * cui il dito stava fermo a guardare.
+ */
+const CODA_MS = 100
+
 /** Dove si e nell'archivio e come ci si sposta. Lo swipe non sa altro. */
 export type Navigazione = { indice: number; quante: number; vai: (prossimo: number) => void }
 
@@ -89,6 +109,19 @@ export function useGestiZoom({
     navigazioneRef.current = navigazione
   })
 
+  /**
+   * Come annullare lo sfogliare in corso stando fuori dall'effect.
+   *
+   * Il confine fra i due gesti di un dito solo e gia sorvegliato dentro
+   * `muovi`, ma li si scopre solo all'evento successivo, e un evento
+   * successivo puo non arrivare mai: l'ingrandimento si accende anche con un
+   * tasto o col pulsante premuto dall'altra mano, e il dito puo restare fermo
+   * dov'e. Lo scarto resterebbe congelato — la fotografia di traverso senza
+   * che nessun dito la tenga — fino al prossimo movimento. Serve percio
+   * accorgersene quando cambia lo stato, non solo quando si muove il dito.
+   */
+  const annullaSwipeRef = useRef<() => void>(() => {})
+
   useEffect(() => {
     const el = superficieRef.current
     if (!el) return
@@ -116,13 +149,30 @@ export function useGestiZoom({
      */
     let pizzicata = false
     /**
-     * Lo sfogliare in corso, se c'e. Porta con se da dove e partito e quando:
-     * il verdetto del rilascio si legge sull'intero gesto — distanza percorsa e
-     * tempo impiegato — non sull'ultimo spostamento, che e un pixel qualunque.
+     * Lo sfogliare in corso, se c'e. Porta con se da dove e partito: la
+     * distanza percorsa, che e uno dei due criteri del rilascio, si legge sul
+     * gesto intero e non sull'ultimo spostamento, che e un pixel qualunque.
      * L'asse vive qui perche si fissa una volta sola, e un asse ricalcolato a
      * ogni movimento e un gesto che trema.
      */
-    let swipe: { id: number; da: Punto; tempo: number; asse: Asse } | null = null
+    let swipe: { id: number; da: Punto; asse: Asse } | null = null
+    /**
+     * Dov'era il dito e quando, negli ultimi CODA_MS. E l'altro criterio del
+     * rilascio — la velocita — e vuole una finestra recente invece del gesto
+     * intero: il tempo passato col dito appoggiato fermo non e parte del
+     * colpetto e non deve entrare nella media.
+     */
+    let coda: { x: number; tempo: number }[] = []
+    /**
+     * L'ingrandimento come i gestori l'hanno visto l'ultima volta.
+     *
+     * Il confine fra i due gesti che un dito solo puo fare — a riposo sfoglia,
+     * da ingranditi sposta la vista — e sorvegliato a ogni evento, ma lo stato
+     * del gesto sopravvivrebbe al passaggio da uno stato all'altro. Serve
+     * quindi accorgersi del passaggio, non solo dello stato: e l'unica cosa
+     * che l'evento in arrivo non racconta.
+     */
+    let ingranditoVisto = false
     let fineRotella: ReturnType<typeof setTimeout> | undefined
 
     /** La fotografia dipinta: la soglia dello swipe e una frazione di questa. */
@@ -133,7 +183,21 @@ export function useGestiZoom({
     /** Rimette la fotografia al suo posto e dimentica il gesto. */
     function annullaSwipe() {
       swipe = null
+      coda = []
       setScarto(0)
+    }
+    annullaSwipeRef.current = annullaSwipe
+
+    /**
+     * Butta i campioni piu vecchi della finestra, tenendone sempre almeno uno.
+     *
+     * Almeno uno perche la coda serve a rispondere «quanto ha percorso il dito
+     * di recente»: rimasti a zero campioni non ci sarebbe risposta, e la
+     * risposta giusta per un dito fermo da un secondo e «niente», non
+     * «infinito».
+     */
+    function potaCoda(ora: number) {
+      while (coda.length > 1 && ora - coda[0].tempo > CODA_MS) coda.shift()
     }
 
     function relativo(x: number, y: number): Punto {
@@ -202,6 +266,7 @@ export function useGestiZoom({
         annullaSwipe()
       } else if (puntatori.size === 1) {
         ultimo = { x: event.clientX, y: event.clientY }
+        ingranditoVisto = zoomRef.current.ingrandito
         // Il gesto si registra sempre, anche da ingranditi: li non produrra
         // nulla, perche l'asse non viene mai fissato. Decidere adesso quale
         // dei due gesti sia sarebbe decidere sul dito appena sceso, che non ha
@@ -209,9 +274,9 @@ export function useGestiZoom({
         swipe = {
           id: event.pointerId,
           da: { x: event.clientX, y: event.clientY },
-          tempo: event.timeStamp,
           asse: 'indeciso',
         }
+        coda = [{ x: event.clientX, tempo: event.timeStamp }]
       }
       setInGesto(true)
     }
@@ -219,6 +284,28 @@ export function useGestiZoom({
     function muovi(event: PointerEvent) {
       if (!puntatori.has(event.pointerId)) return
       puntatori.set(event.pointerId, { x: event.clientX, y: event.clientY })
+
+      // L'ingrandimento puo cambiare A META GESTO — Esc o `0` col dito ancora
+      // giu, il pulsante premuto con l'altra mano, il gesto di sistema che fa
+      // scattare onCancel del dialog — e i due gesti che un dito solo puo fare
+      // sono l'uno l'opposto dell'altro. Guardare lo stato a ogni evento non
+      // basta: e il gesto in corso a sopravvivere al passaggio. Un
+      // trascinamento fatto da ingranditi, riletto dall'origine come uno
+      // sfogliare, e gia oltre soglia — due pixel di dito, duecento di salto,
+      // e la fotografia cambia da sola. Il gesto in corso si chiude qui, e la
+      // posizione di adesso diventa la nuova base perche il dito che resta giu
+      // non si porti dietro il passato.
+      const ingrandito = zoomRef.current.ingrandito
+      if (ingrandito !== ingranditoVisto) {
+        ingranditoVisto = ingrandito
+        // Solo con un dito solo: durante una pizzicata l'ingrandimento cambia
+        // di continuo per mestiere, e li non c'e nessun confine da sorvegliare
+        // — lo swipe e gia stato annullato dal secondo dito.
+        if (puntatori.size === 1) {
+          annullaSwipe()
+          ultimo = { x: event.clientX, y: event.clientY }
+        }
+      }
 
       if (puntatori.size === 2 && distanzaIniziale > 0) {
         zoomRef.current.versoLivello((livelloIniziale * distanza()) / distanzaIniziale, centro())
@@ -236,6 +323,8 @@ export function useGestiZoom({
       // a riposo la fotografia sta tutta dentro lo schermo — quindi lo stesso
       // gesto non risulta ambiguo a chi lo fa.
       if (puntatori.size === 1 && swipe && swipe.id === event.pointerId) {
+        coda.push({ x: event.clientX, tempo: event.timeStamp })
+        potaCoda(event.timeStamp)
         const dx = event.clientX - swipe.da.x
         const dy = event.clientY - swipe.da.y
         // Una volta sola: dal momento in cui l'asse e leggibile in poi il gesto
@@ -250,22 +339,65 @@ export function useGestiZoom({
     function su(event: PointerEvent) {
       if (!puntatori.has(event.pointerId)) return
 
+      // `pointercancel` dice l'opposto di `pointerup`: che il gesto NON e stato
+      // compiuto, perche il sistema se l'e preso. E il momento di annullare e
+      // far rimbalzare la fotografia, non di deciderla. Sul telefono il caso
+      // vero e lo swipe che parte vicino al bordo dello schermo: il gesto di
+      // ritorno del sistema lo intercetta, e chi lo fa si ritroverebbe la
+      // pagina precedente E la fotografia cambiata sotto.
+      const annullato = event.type === 'pointercancel'
+
       // Il dito si alza: lo sfogliare o si compie o torna indietro. Il verdetto
       // si legge sul gesto intero, ed e per questo che la partenza va ricordata.
       const sfogliava = swipe
       swipe = null
-      if (sfogliava && sfogliava.id === event.pointerId && sfogliava.asse === 'orizzontale') {
+      if (
+        !annullato &&
+        sfogliava &&
+        sfogliava.id === event.pointerId &&
+        sfogliava.asse === 'orizzontale' &&
+        // Anche qui, e non solo a ogni movimento: fra l'ultimo spostamento e il
+        // rilascio ci sta un ingrandimento — un tasto, un pulsante — e da
+        // ingranditi il trascinamento sposta la vista, non sfoglia.
+        !zoomRef.current.ingrandito
+      ) {
         const { indice, quante, vai } = navigazioneRef.current
-        const decisione = decisioneSwipe({
+        const dipinta = larghezza()
+        potaCoda(event.timeStamp)
+        const inizioCoda = coda[0] ?? { x: event.clientX, tempo: event.timeStamp }
+        // Due domande diverse alla stessa funzione, perche i due criteri
+        // vogliono due grandezze diverse. La DISTANZA e del gesto intero: chi
+        // trascina piano guardando la fotografia scorrere ha percorso tutto
+        // quello che ha percorso, e ogni pixel conta. La VELOCITA e solo della
+        // coda: il tempo passato col dito appoggiato fermo — che in una
+        // lightbox e la norma, perche ci si viene a guardare prima che a
+        // sfogliare — non e parte del colpetto, e al denominatore
+        // schiaccerebbe la media fino a farlo sparire.
+        //
+        // `durataMs: 0` spegne per costruzione il ramo della velocita: dentro
+        // decisioneSwipe la divisione e protetta da `durataMs > 0`. La prima
+        // chiamata e percio il solo criterio della distanza, la seconda porta
+        // la coda con se. La regola resta una sola e sta li: qui si sceglie
+        // soltanto con quali numeri interrogarla.
+        const perDistanza = decisioneSwipe({
           dx: event.clientX - sfogliava.da.x,
-          durataMs: event.timeStamp - sfogliava.tempo,
-          larghezza: larghezza(),
+          durataMs: 0,
+          larghezza: dipinta,
           indice,
           quante,
         })
+        const perScatto = decisioneSwipe({
+          dx: event.clientX - inizioCoda.x,
+          durataMs: event.timeStamp - inizioCoda.tempo,
+          larghezza: dipinta,
+          indice,
+          quante,
+        })
+        const decisione = perDistanza !== 'annulla' ? perDistanza : perScatto
         if (decisione === 'avanti') vai(indice + 1)
         else if (decisione === 'indietro') vai(indice - 1)
       }
+      coda = []
       // Sempre, non solo quando si annulla: cambiando fotografia la successiva
       // entrerebbe gia di traverso, spostata di quanto era arrivato il dito.
       // Con `data-gesto` che qui torna falso, questo zero e anche il ritorno
@@ -380,6 +512,17 @@ export function useGestiZoom({
     // Solo il ref: i valori freschi arrivano da zoomRef, e riagganciarsi a
     // ogni render romperebbe il gesto invece di aggiornarlo.
   }, [superficieRef])
+
+  // L'ingrandimento che cambia chiude lo sfogliare in corso, in tutti e due i
+  // versi. Acceso: il gesto era uno sfogliare e da qui in poi sposterebbe la
+  // vista. Spento — Esc col dito ancora giu, che per scelta dichiarata torna a
+  // schermo intero invece di chiudere: il gesto era uno spostamento e riletto
+  // dall'origine sarebbe gia oltre soglia, due pixel di dito e la fotografia
+  // cambia da sola. In entrambi i casi il gesto in corso non ha piu un
+  // significato, e la fotografia torna dritta.
+  useEffect(() => {
+    annullaSwipeRef.current()
+  }, [zoom.ingrandito])
 
   return { inGesto, scarto }
 }
