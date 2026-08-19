@@ -1,6 +1,7 @@
 export const it = {
   skipToContent: 'Vai al contenuto',
   navPrimary: 'Navigazione principale',
+  navHome: 'Home',
   navGallery: 'Fotografie',
   navProjects: 'Progetti',
   navAbout: 'About',

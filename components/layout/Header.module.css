@@ -19,8 +19,25 @@
   width: 100%;
 
   /* Il fondo e traslucido invece che pieno: la fotografia continua sotto
-     l header, che resta presente senza tagliare la pagina in due. */
-  background: rgb(var(--scrim) / 0.72);
+     l header, che resta presente senza tagliare la pagina in due.
+
+     Quanto traslucido non e una scelta grafica, e il minimo che rende leggibile
+     cio che ci sta sopra. L header e adesivo e sotto gli scorrono le
+     fotografie, di qualunque tono; le sue etichette — voci, codici lingua e il
+     simbolo del menu sul telefono — sono a `--fg-muted`. Il fondale peggiore e
+     il bianco, perche e il piu lontano dal nero dello scrim.
+
+     **Misurato il 2026-08-19** componendo `--fg-muted` sopra lo scrim steso su
+     bianco: a 0.72 il rapporto e 2.55:1, a 0.80 e 3.48:1, a 0.87 tocca 4.5:1.
+     Le etichette dell header sono testo da 11px, quindi la soglia e il 4.5:1
+     di WCAG 1.4.3 e non il 3:1 di 1.4.11 che basterebbe al solo simbolo. 0.90
+     da 4.86:1: sta sopra la soglia senza appoggiarcisi, e lascia comunque
+     passare la fotografia. Il valore e verificato sui pixel resi, non a
+     tavolino, in e2e/a11y.spec.ts.
+
+     Le virgole nel token romperebbero questa riga: il perche sta accanto a
+     `--scrim` in styles/tokens.css. */
+  background: rgb(var(--scrim) / 0.9);
   backdrop-filter: saturate(140%) blur(14px);
   -webkit-backdrop-filter: saturate(140%) blur(14px);
   /* Un filo, non un bordo: separa senza disegnare una barra. */
@@ -49,6 +66,46 @@
   -webkit-backdrop-filter: none;
 }
 
+/* Uno strato opaco sulla sola striscia della testata, e solo mentre il menu e
+   aperto.
+
+   Il pannello copre lo schermo intero, testata compresa, e tiene le voci
+   lontane dal bordo alto con un riempimento pari all altezza dell header. Ma
+   quel riempimento sta dentro l area che scorre: appena il contenuto supera lo
+   schermo — bastano i 375px di un iPhone SE girato di lato — le voci ci
+   scivolano sopra ed entrano nella striscia. Li non c e niente che le fermi,
+   perche il fondo di un elemento si dipinge PRIMA dei suoi discendenti
+   posizionati, e il pannello e un discendente dell header.
+
+   Da qui il `z-index: 31`: sopra il pannello (30), sotto il nome e il pulsante
+   di chiusura (32), che nella striscia ci stanno di diritto. Lo strato esiste
+   solo a menu aperto perche a menu chiuso coprirebbe le voci del desktop, che
+   non hanno z-index e si dipingono piu in basso di qualunque valore positivo.
+
+   E opaco `--bg` e non lo scrim: dietro c e il pannello, che e gia `--bg`, e la
+   striscia deve continuarlo senza giunta. **Misurato il 2026-08-19** a 667x375:
+   prima nella striscia comparivano pixel a 242 di luminosita, cioe l indicatore
+   della lingua e le voci del pannello; dopo, solo lo sfondo.
+
+   Il media query non e decorativo. `:has([data-pannello-menu]:not([hidden]))`
+   guarda l attributo, non cio che si vede: sopra il breakpoint il pannello e
+   dentro un contenitore `display: none`, quindi non dipinge niente, ma il
+   selettore continua a corrispondere. Senza questa cornice, chi apriva il menu
+   sul telefono e poi allargava la finestra oltre i 767px si trovava lo strato
+   steso sopra le voci del desktop, che non hanno z-index e stanno sotto
+   qualunque valore positivo. **Verificato il 2026-08-19**: aperto il menu a
+   390px e portata la finestra a 1280, «Fotografie» era coperto — il suo
+   riquadro leggeva 8,8,10, cioe solo sfondo. */
+@media (max-width: 767px) {
+  .header:has([data-pannello-menu]:not([hidden]))::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 31;
+    background: var(--bg);
+  }
+}
+
 @supports not (backdrop-filter: blur(1px)) {
   .header {
     background: var(--bg);
@@ -65,9 +122,16 @@
   /* Sopra il pannello del menu, che nel DOM e un discendente dell header e
      quindi coprirebbe i suoi fratelli. Alzare lo z-index dell header non
      basterebbe: il confronto avviene fra elementi dello stesso contesto di
-     impilamento, ed e l header stesso a crearlo. */
+     impilamento, ed e l header stesso a crearlo.
+
+     32 e non 31 perche a menu aperto, fra il pannello e questo nome, c e lo
+     strato che maschera la striscia: il suo perche e scritto sopra. A 31 il
+     nome resterebbe sopra lo strato lo stesso — a parita di z-index decide
+     l ordine dell albero, e uno `::before` viene prima del contenuto — ma
+     sarebbe una precedenza che dipende da dove stanno due regole in due file
+     diversi. Il numero la dice invece di lasciarla capire. */
   position: relative;
-  z-index: 31;
+  z-index: 32;
 }
 
 .nav {

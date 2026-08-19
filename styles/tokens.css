@@ -9,7 +9,14 @@
   --fg-muted: #8f8d8a;
   --border: #232327;
   --focus-ring: #7fb2ff;
-  --scrim: 8, 8, 10;
+  /* Canali separati da spazi, non da virgole: il token esiste per finire
+     dentro `rgb(var(--scrim) / <alpha>)`, e quella forma accetta solo la
+     sintassi moderna. Con le virgole la dichiarazione diventa
+     `rgb(8, 8, 10 / 0.9)` — le due sintassi mescolate — e il browser la scarta
+     in silenzio, lasciando trasparente cio che doveva coprire. E gia successo
+     all header, verificato il 2026-08-19 su Chromium e su WebKit: dichiarazione
+     rifiutata da entrambi, nessun avviso da nessuna parte. */
+  --scrim: 8 8 10;
 
   /* --font-display e --font-sans-loaded sono iniettati da next/font sul tag
      html. Il ripiego copre il primo paint e il caso in cui il font non arrivi. */

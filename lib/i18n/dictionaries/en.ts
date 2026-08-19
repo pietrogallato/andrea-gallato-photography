@@ -3,6 +3,7 @@ import type { Dictionary } from './it'
 export const en: Dictionary = {
   skipToContent: 'Skip to content',
   navPrimary: 'Main navigation',
+  navHome: 'Home',
   navGallery: 'Photographs',
   navProjects: 'Projects',
   navAbout: 'About',

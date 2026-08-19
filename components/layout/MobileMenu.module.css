@@ -7,11 +7,16 @@
   position: relative;
   /* Sopra il pannello, che e il suo fratello nel DOM. Senza questa riga il
      pulsante resta dipinto sotto: visibile agli strumenti, invisibile e non
-     cliccabile per chi guarda. Era il difetto principale del menu aperto. */
-  z-index: 31;
+     cliccabile per chi guarda. Era il difetto principale del menu aperto.
+
+     32 e non 31 per stare, insieme al nome del sito, sopra lo strato che a
+     menu aperto maschera la striscia della testata: vive in Header.module.css,
+     col perche accanto. Chi cambia uno dei due numeri deve guardare l altro. */
+  z-index: 32;
+  display: grid;
+  place-items: center;
   min-width: var(--target-min);
   min-height: var(--target-min);
-  padding: var(--space-2);
   color: var(--fg-muted);
   transition: color var(--duration-fast) var(--ease);
 }
@@ -19,6 +24,51 @@
 .trigger:hover,
 .trigger[aria-expanded='true'] {
   color: var(--fg);
+}
+
+/* Il simbolo, e non piu una scritta. Due trattini che ruotano in croce:
+   la stessa figura girata, invece di tre trattini di cui uno deve sparire.
+
+   Lo stato si legge da `aria-expanded`, che il pulsante deve dichiarare
+   comunque: nessuna classe in piu da tenere in accordo, e se un giorno
+   qualcuno dimenticasse di aggiornare l attributo se ne accorgerebbe subito,
+   perche il simbolo resterebbe indietro.
+
+   La rotazione e una transizione CSS e non un animazione in JavaScript: e
+   l unico modo perche la regola globale di prefers-reduced-motion la fermi
+   davvero. A chi ha chiesto meno movimento il simbolo cambia invece di
+   girare, e non resta ne a meta ne fermo nella posizione sbagliata. */
+.simbolo {
+  position: relative;
+  display: block;
+  inline-size: 20px;
+  block-size: 20px;
+}
+
+.barra {
+  position: absolute;
+  inset-inline: 1px;
+  inset-block-start: calc(50% - 1px);
+  block-size: 1.5px;
+  background: currentColor;
+  border-radius: 2px;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.barra:first-child {
+  transform: translateY(-3.5px);
+}
+
+.barra:last-child {
+  transform: translateY(3.5px);
+}
+
+.trigger[aria-expanded='true'] .barra:first-child {
+  transform: rotate(45deg);
+}
+
+.trigger[aria-expanded='true'] .barra:last-child {
+  transform: rotate(-45deg);
 }
 
 /* Pannello a schermo intero invece che a tendina: su un sito di fotografie il
@@ -34,15 +84,10 @@
   z-index: 30;
   display: flex;
   flex-direction: column;
-  /* Il contenuto parte in alto, subito sotto l header. Con
-     `justify-content: center` restava un vuoto di centocinquanta pixel sopra
-     le voci e altrettanto sotto, ed era la ragione principale del disordine. */
-  justify-content: flex-start;
-  gap: var(--space-5);
   /* Stesso margine laterale dell header: il nome del sito e le voci del menu
      cadono sulla stessa linea verticale. */
-  padding: calc(var(--header-height-compact) + var(--space-5)) var(--space-4)
-    max(var(--space-5), env(safe-area-inset-bottom));
+  padding: calc(var(--header-height-compact) + var(--space-3)) var(--space-4)
+    max(var(--space-4), env(safe-area-inset-bottom));
   background: var(--bg);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -53,37 +98,55 @@
   display: none;
 }
 
+/* Le lingue in alto a destra, sotto la testata. In fondo non c e piu niente:
+   due parole di due lettere appese al bordo inferiore erano il modo in cui il
+   menu dichiarava di non avere altro da dire. */
+.lingue {
+  display: flex;
+  justify-content: flex-end;
+  animation: reveal var(--duration-slow) var(--ease-out) both;
+}
+
+/* Le voci si distribuiscono sull altezza invece di impilarsi in cima.
+   **Misurato il 2026-08-17** sul menu precedente, a 412x915: le voci
+   occupavano 219px e restavano 463px di nero fra loro e il fondo, cioe il 51%
+   dello schermo. Distribuendole il vuoto non si tara, sparisce per
+   costruzione: vale anche se un giorno le voci diventano cinque, o se cambia
+   il telefono.
+
+   `min-height: 0` perche un elemento flessibile non scende sotto la propria
+   dimensione naturale senza: su uno schermo molto basso le voci sfonderebbero
+   invece di lasciar scorrere il pannello. */
 .nav {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  justify-content: space-evenly;
 }
 
 .navLink {
   display: block;
   font-family: var(--font-display);
-  /* Piu contenuto di prima: a 390px il vecchio clamp arrivava a quasi 48px e
-     le tre voci occupavano mezzo schermo. */
-  font-size: clamp(1.75rem, 1.1rem + 4.5vw, 2.5rem);
+  font-size: clamp(2rem, 1.2rem + 5.5vw, 3.25rem);
   letter-spacing: var(--tracking-display);
-  line-height: 1.1;
+  line-height: 1.05;
   text-decoration: none;
-  padding: var(--space-3) 0;
-  /* Un filo fra una voce e l altra: da ritmo all elenco, che prima era un
-     blocco di parole grandi senza struttura. */
-  border-bottom: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
+  /* Spente, tranne quella della pagina in cui si e. E il menu a dire dove sei,
+     senza aggiungere un segno apposta accanto: il contrasto fa da segno. */
+  color: var(--fg-muted);
+  /* Il testo grande da gia quasi l area minima, ma «Home» sullo schermo piu
+     stretto si ferma sotto i 44px: il riempimento la garantisce comunque. */
+  padding-block: var(--space-2);
   transition: color var(--duration-fast) var(--ease);
-}
-
-.navLink:first-child {
-  border-top: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
 }
 
 .navLink[aria-current='page'] {
   color: var(--fg);
 }
 
-/* Le voci entrano una dopo l altra. `--i` non e impostato da nessuna parte in
-   JavaScript: il ritardo si scala con nth-child, cosi il markup resta pulito. */
+/* Le voci entrano una dopo l altra. Il ritardo si scala con nth-child, cosi il
+   markup resta pulito e non serve una variabile per ognuna. */
 .navLink {
   animation: reveal var(--duration-slow) var(--ease-out) both;
 }
@@ -100,15 +163,6 @@
   animation-delay: 140ms;
 }
 
-.controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  /* Spinti in fondo al pannello invece che appesi sotto le voci. */
-  margin-top: auto;
-  padding-top: var(--space-5);
-  border-top: 1px solid color-mix(in oklab, var(--fg) 10%, transparent);
-  animation: reveal var(--duration-slow) var(--ease-out) both;
+.navLink:nth-child(4) {
   animation-delay: 190ms;
 }
