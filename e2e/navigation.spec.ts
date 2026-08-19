@@ -1,4 +1,5 @@
 import { test, expect, nuovoContesto } from './fixtures'
+import sharp from 'sharp'
 
 /**
  * Sotto il breakpoint mobile il selettore lingua non sta nell header: vive nel
@@ -277,4 +278,127 @@ test('la voce della pagina corrente e segnata', async ({ page, isMobile }) => {
 
   await expect(page.getByRole('link', { name: 'Fotografie' })).toHaveAttribute('aria-current', 'page')
   await expect(page.getByRole('link', { name: 'Progetti' })).not.toHaveAttribute('aria-current', 'page')
+})
+
+/**
+ * La striscia della testata resta della testata, anche quando il pannello del
+ * menu scorre.
+ *
+ * Il pannello e `position: fixed; inset: 0`: copre lo schermo intero, testata
+ * compresa, e si tiene le voci lontane dal bordo alto con un riempimento pari
+ * all altezza dell header. Quel riempimento pero e dentro l area che scorre:
+ * appena il contenuto supera lo schermo, le voci gli passano sopra e finiscono
+ * nella striscia dell header. Li sotto non c e niente che le fermi, perche il
+ * fondo dell header appartiene all elemento che crea il contesto di
+ * impilamento e si dipinge PRIMA dei suoi discendenti posizionati — pannello
+ * incluso. Il risultato: «IT», «EN» e «Home» sovrapposti al nome del sito e
+ * alla X di chiusura.
+ *
+ * Non serve un telefono strano per arrivarci: bastano 375px di altezza, cioe
+ * un iPhone SE girato di lato. **Misurato il 2026-08-19** a 667x375, che e la
+ * sua misura in orizzontale: il pannello vuole 415px e ne ha 375, quindi
+ * scorre. Il viewport dei progetti della suite e piu alto e non ci arriva mai,
+ * ed e il motivo per cui nessun test lo vedeva.
+ *
+ * Nella striscia dell header, fuori dal nome e dal pulsante, comparivano pixel
+ * fino a 143,141,138 — cioe testo del pannello. Dopo, il massimo e lo sfondo.
+ */
+test('a pannello scorso le voci non entrano nella striscia dell header', async ({ browser }) => {
+  const context = await nuovoContesto(browser, { viewport: { width: 667, height: 375 } })
+  const page = await context.newPage()
+  await page.goto('/it/fotografie')
+  await page.getByRole('button', { name: 'Apri il menu' }).click()
+
+  const rilievo = await page.evaluate(() => {
+    const pannello = document.querySelector('[data-pannello-menu]') as HTMLElement
+    pannello.scrollTop = pannello.scrollHeight
+    const header = document.querySelector('header')!.getBoundingClientRect()
+    const nome = document.querySelector('header a')!.getBoundingClientRect()
+    const chiusura = document
+      .querySelector('header button[aria-expanded]')!
+      .getBoundingClientRect()
+    const riquadro = (r: DOMRect) => ({ x: r.x, y: r.y, destra: r.right, fondo: r.bottom })
+    return {
+      scorre: pannello.scrollHeight > pannello.clientHeight,
+      header: { x: header.x, y: header.y, larghezza: header.width, altezza: header.height },
+      esclusi: [riquadro(nome), riquadro(chiusura)],
+    }
+  })
+
+  // Senza scorrimento il test non guarderebbe il caso di cui parla.
+  expect(rilievo.scorre).toBe(true)
+
+  const png = await page.screenshot({
+    clip: {
+      x: rilievo.header.x,
+      y: rilievo.header.y,
+      width: rilievo.header.larghezza,
+      height: rilievo.header.altezza,
+    },
+  })
+  const { data, info } = await sharp(png).raw().toBuffer({ resolveWithObject: true })
+  const scala = info.width / rilievo.header.larghezza
+
+  // Due pixel di margine attorno a cio che nella striscia ci sta di diritto:
+  // l antialiasing dei glifi sborda di poco oltre il riquadro del testo.
+  const dentroUnEscluso = (xCss: number, yCss: number) =>
+    rilievo.esclusi.some(
+      (r) => xCss >= r.x - 2 && xCss <= r.destra + 2 && yCss >= r.y - 2 && yCss <= r.fondo + 2,
+    )
+
+  let massimo = 0
+  for (let py = 0; py < info.height; py++) {
+    for (let px = 0; px < info.width; px++) {
+      const xCss = rilievo.header.x + px / scala
+      const yCss = rilievo.header.y + py / scala
+      if (dentroUnEscluso(xCss, yCss)) continue
+      const i = (py * info.width + px) * info.channels
+      massimo = Math.max(massimo, data[i], data[i + 1], data[i + 2])
+    }
+  }
+
+  // Lo sfondo e 8,8,10. Il testo del pannello e 143,141,138: fra i due c e
+  // tutto lo spazio che serve perche questa soglia non sia una taratura.
+  expect(massimo, 'canale piu chiaro trovato nella striscia dell header').toBeLessThanOrEqual(24)
+  await context.close()
+})
+
+/**
+ * Allargando la finestra a menu aperto, l header torna quello del desktop e le
+ * sue voci devono esserci.
+ *
+ * Il pannello resta «aperto» nello stato di React anche quando il breakpoint lo
+ * nasconde, quindi il selettore che accende lo strato di mascheratura della
+ * testata — `:has([data-pannello-menu]:not([hidden]))` — continua a
+ * corrispondere: guarda l attributo, non cio che si vede. Senza confinare quel
+ * selettore sotto il breakpoint, lo strato si stende sopra le voci del desktop,
+ * che non hanno z-index e stanno sotto qualunque valore positivo.
+ *
+ * **Misurato il 2026-08-19**: menu aperto a 390px, finestra portata a 1280, e il
+ * riquadro di «Fotografie» leggeva 8,8,10 su tutti e tre i canali, cioe solo
+ * sfondo. La voce c era per il DOM e per axe, e non si vedeva.
+ */
+test('allargando la finestra a menu aperto le voci del desktop restano visibili', async ({
+  browser,
+}) => {
+  const context = await nuovoContesto(browser, { viewport: { width: 390, height: 664 } })
+  const page = await context.newPage()
+  await page.goto('/it/fotografie')
+  await page.getByRole('button', { name: 'Apri il menu' }).click()
+  await page.setViewportSize({ width: 1280, height: 720 })
+
+  const voce = page.getByRole('navigation', { name: 'Navigazione principale' }).getByRole('link', {
+    name: 'Fotografie',
+  })
+  await expect(voce).toBeVisible()
+
+  const riquadro = (await voce.boundingBox())!
+  const png = await page.screenshot({ clip: riquadro })
+  const statistiche = await sharp(png).stats()
+  const massimo = Math.max(...statistiche.channels.slice(0, 3).map((c) => c.max))
+
+  // Lo sfondo e 8,8,10; la voce della pagina corrente e disegnata a `--fg`,
+  // 242,240,237. Qualunque soglia in mezzo separa «si vede» da «e coperta».
+  expect(massimo, 'canale piu chiaro nel riquadro della voce').toBeGreaterThan(100)
+  await context.close()
 })

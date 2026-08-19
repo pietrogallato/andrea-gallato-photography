@@ -7,8 +7,12 @@
   position: relative;
   /* Sopra il pannello, che e il suo fratello nel DOM. Senza questa riga il
      pulsante resta dipinto sotto: visibile agli strumenti, invisibile e non
-     cliccabile per chi guarda. Era il difetto principale del menu aperto. */
-  z-index: 31;
+     cliccabile per chi guarda. Era il difetto principale del menu aperto.
+
+     32 e non 31 per stare, insieme al nome del sito, sopra lo strato che a
+     menu aperto maschera la striscia della testata: vive in Header.module.css,
+     col perche accanto. Chi cambia uno dei due numeri deve guardare l altro. */
+  z-index: 32;
   display: grid;
   place-items: center;
   min-width: var(--target-min);
