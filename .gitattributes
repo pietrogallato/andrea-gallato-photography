@@ -1,0 +1,4 @@
+# Il repository nasce su macOS, ma viene modificato anche da Windows.
+# Senza questa riga il primo commit da Windows riscrive i fine riga di
+# ogni file, e il diff diventa illeggibile.
+* text=auto eol=lf

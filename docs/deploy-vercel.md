@@ -18,7 +18,7 @@ Necessarie al build. Senza, il client Sanity non sa quale progetto interrogare e
 
 ```
 NEXT_PUBLIC_SANITY_PROJECT_ID=xpdypayk
-NEXT_PUBLIC_SANITY_DATASET=development
+NEXT_PUBLIC_SANITY_DATASET=production
 NEXT_PUBLIC_SANITY_API_VERSION=2026-08-07
 ```
 
@@ -26,9 +26,9 @@ NEXT_PUBLIC_SANITY_API_VERSION=2026-08-07
 
 ### Sul dataset
 
-Il valore è `development` **di proposito**: è dove vivono i 30 placeholder. Il dataset `production` esiste ma è vuoto, perché lo script di seed rifiuta di popolarlo — riempire di segnaposto il dataset reale è esattamente ciò che non deve accadere.
+Il valore è `production`: è dove vivono le fotografie vere di Andrea. Il passaggio da `development` è già avvenuto, e il sito pubblicato non mostra più segnaposto.
 
-Quando Andrea avrà caricato le fotografie vere in `production`, la variabile va cambiata e basta un nuovo deploy. Fino ad allora il sito pubblicato mostra placeholder, ed è bene saperlo prima di condividerne l'indirizzo.
+Il dataset `development` esiste ancora e contiene i placeholder della fase di costruzione. Serve solo a chi lavora sul codice e vuole contenuti da buttare; non va mai rimesso nelle variabili di Vercel.
 
 ### Variabili che serviranno più avanti
 
@@ -64,4 +64,8 @@ Vercel ripristina la cache di build fra un deploy e l'altro, e le risposte di Sa
 
 ## Nota sulla visibilità
 
-Il repository è privato. Il sito pubblicato è invece pubblico: chiunque abbia l'indirizzo lo vede. Finché contiene placeholder non è un problema; quando conterrà le fotografie di Andrea, è una pubblicazione a tutti gli effetti e va trattata come tale.
+Il repository è **pubblico**, ed è una scelta obbligata più che un'apertura: su piano Hobby, Vercel costruisce i commit di una seconda persona soltanto se il repository non è privato. Senza questo, i push di Andrea verrebbero rifiutati in silenzio.
+
+Ne discende una regola pratica: qualunque cosa entri nel repository è leggibile da chiunque. I segreti stanno in `.env.local`, che non è versionato, e nelle variabili d'ambiente di Vercel — nient'altro.
+
+Il sito pubblicato contiene ormai le fotografie di Andrea: è una pubblicazione a tutti gli effetti, e va trattata come tale.
